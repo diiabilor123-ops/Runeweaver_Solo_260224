@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 307758fd701038d4092e05e18e1ef662, type: 3}
+  m_Name: Effect_Test
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 1888593672222384, guid: 05c49f993f3f34943a1500ec092043ed, type: 3}
+  duration: 2
+  hitEffectPrefabs:
+  - {fileID: 6694299194745298734, guid: 5b411749540b8604998fa2b54ef4b545, type: 3}
+  - {fileID: 5662525776041357048, guid: 0a93a7db0c2d48e478f81ec1ebcba6c8, type: 3}
+  isVFXGraph: 0
+  startEvent: create
+  hitEvent: Hit
