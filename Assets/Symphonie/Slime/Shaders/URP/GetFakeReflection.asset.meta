@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 4b1ad5a444c4cdd45ae4a2e53cb3a616
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 281238
+  packageName: Cartoon Jelly Slime
+  packageVersion: 1.3
+  assetPath: Assets/Symphonie/Slime/Shaders/URP/GetFakeReflection.asset
+  uploadId: 774926
