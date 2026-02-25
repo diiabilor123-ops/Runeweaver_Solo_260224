@@ -27,13 +27,16 @@ namespace Runeweaver.Player
 
         private void Update()
         {
-            // [1] 입력값 미리 계산 (공통 사용)
-            Vector3 inputDir = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;
+            // [1] 입력값 계산: GetAxisRaw로 즉각적인 반응 유도
+            float h = Input.GetAxisRaw("Horizontal");
+            float v = Input.GetAxisRaw("Vertical");
 
-            // [2] 대시 입력 (하데스 스타일: 공격 중에도 대시 가능)
+            // [대각선 보정] normalized를 사용하여 상하좌우/대각선 어디든 이동 거리를 '1'로 고정합니다.
+            Vector3 inputDir = new Vector3(h, 0, v).normalized;
+
+            // [2] 대시 입력: 하데스처럼 공격 중 대시하면 공격을 캔슬합니다.
             if (Input.GetKeyDown(KeyCode.Space) && _dash.CanDash)
             {
-                // 공격 중에 대시하면 현재 진행 중인 공격을 강제로 취소(캔슬)합니다.
                 if (IsAttacking) _combat.CancelAttack();
                 _dash.DoDash(inputDir);
             }
@@ -44,14 +47,11 @@ namespace Runeweaver.Player
                 _combat.TryAttack();
             }
 
-            // [4] 행동 제어 (대시 중에는 모든 조작 금지)
+            // [4] 행동 제어: 대시 중이 아닐 때만 이동 로직 실행
             if (!IsDashing)
             {
-                // 공격 중에는 이동 속도를 제어하기 위해 IsAttacking 상태를 넘겨줍니다.
+                // 입력 방향(inputDir)과 현재 공격 중인지 여부를 전달합니다.
                 _movement.Move(inputDir, IsAttacking);
-
-                // 공격 중에는 마우스 회전을 멈추고 고정합니다 (하데스 특징).
-                if (!IsAttacking) _movement.LookAtMouse();
             }
         }
     }
