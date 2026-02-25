@@ -44,7 +44,7 @@ public class FadeOutDestroy : MonoBehaviour
                 {
                     Color emissionColor = renderer.material.GetColor("_EmissionColor");
                     // 알파값에 따라 발광 강도를 함께 낮춥니다.
-                    renderer.material.SetColor("_EmissionColor", emissionColor * _alpha);
+                    renderer.material.SetColor("_EmissionColor", emissionColor * (_alpha * _alpha));
                 }
             }
         }
