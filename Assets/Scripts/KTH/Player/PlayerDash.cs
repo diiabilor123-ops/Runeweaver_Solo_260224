@@ -15,6 +15,10 @@ namespace Runeweaver.Player
         [SerializeField] private float dashDuration = 0.2f; // 대시 속도 (낮을수록 빠름)
         [SerializeField] private float dashCooldown = 0.5f;
 
+        [Header("Ghost Effect")]
+        [SerializeField] private DashGhostManager ghostManager; // 하이어라키의 매니저 연결
+        [SerializeField] private float ghostInterval = 0.05f;    // 잔상 생성 간격
+
         public bool CanDash { get; private set; } = true; // Controller가 읽어갈 수 있도록 프로퍼티 사용
         private PlayerController _controller;
         private Animator _anim;
@@ -48,6 +52,10 @@ namespace Runeweaver.Player
             // 3. 대시 시작 시 즉시 해당 방향을 바라보게 함
             transform.rotation = Quaternion.LookRotation(dashDirection);
 
+            // [수정] 대시 이동과 동시에 잔상을 뿌리는 코루틴 실행
+            IEnumerator ghostCoroutine = CreateGhostDuringDash();
+            StartCoroutine(ghostCoroutine);
+
             // 4. DOTween 이동: In-Place 애니메이션이므로 코드가 직접 좌표를 옮깁니다.
             // Ease.OutQuad는 처음에 빠르고 끝에 살짝 감속되어 타격감이 좋습니다.
             transform.DOMove(transform.position + dashDirection * dashDistance, dashDuration)
@@ -57,6 +65,8 @@ namespace Runeweaver.Player
             yield return new WaitForSeconds(dashDuration);
 
             // 5. 대시 종료 처리
+            // 대시 종료 시 잔상 생성 중지
+            StopCoroutine(ghostCoroutine);
             _controller.IsDashing = false;
 
             // [추가 디테일] 대시가 끝난 직후 애니메이터의 Speed가 이전 값을 기억할 수 있으므로 
@@ -66,6 +76,16 @@ namespace Runeweaver.Player
             // 6. 쿨타임 대기
             yield return new WaitForSeconds(dashCooldown);
             CanDash = true;
+        }
+
+        // 대시 지속 시간 동안 일정 간격으로 잔상 생성 요청
+        private IEnumerator CreateGhostDuringDash()
+        {
+            while (true)
+            {
+                if (ghostManager != null) ghostManager.CreateGhost(transform);
+                yield return new WaitForSeconds(ghostInterval);
+            }
         }
     }
 }

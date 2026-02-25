@@ -115,7 +115,7 @@ namespace Runeweaver.Player
         /// </summary>
         private void InstantLookAtMouse()
         {
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            Ray ray = UnityEngine.Camera.main.ScreenPointToRay(Input.mousePosition);
             // 맵 레이어(예: Ground)만 체크하도록 설정하는 것이 성능상 좋습니다.
             if (Physics.Raycast(ray, out RaycastHit hit, 100f))
             {
