@@ -34,9 +34,11 @@ public class Bullet_NormalArrow : MonoBehaviour
 
         // 2. [전투 충돌] 데미지를 입을 수 있는 대상(IDamageableTest)인지 확인
         // 전투 충돌
-        if (other.TryGetComponent(out IDamageableTest target))
+        if (other.TryGetComponent(out IDamageable target))
         {
-            target.TakeDamage(10f * bulletbase.Data.damageMultiplier);
+            // 세 번째 인자로 Team.Player를 전달합니다.
+            float damage = 10f * bulletbase.Data.damageMultiplier;
+            target.TakeDamage(damage, ElementType.None, Team.Player);
 
             // [변경] 투사체는 visuals에게 "나 맞았으니까 피드백 다 해줘"라고 한 줄만 보냅니다.
             if (visuals != null)

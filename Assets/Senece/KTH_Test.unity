@@ -244,7 +244,6 @@ GameObject:
   - component: {fileID: 508440056}
   - component: {fileID: 508440055}
   - component: {fileID: 508440054}
-  - component: {fileID: 508440058}
   m_Layer: 0
   m_Name: Enemy_Dummy
   m_TagString: Monster
@@ -345,19 +344,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &508440058
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 508440053}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da0369b2c0ffd4d409d7daaa1588b35a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  hp: 100
 --- !u!1 &580432267
 GameObject:
   m_ObjectHideFlags: 0
@@ -459,6 +445,19 @@ CapsuleCollider:
   m_Height: 1.5
   m_Direction: 1
   m_Center: {x: 0, y: 0.75, z: 0}
+--- !u!114 &672131042
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 184203433}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f53bb3e0ed5ac134ea0509c4c5436708, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
+  maxHp: 100
 --- !u!1 &680425473
 GameObject:
   m_ObjectHideFlags: 0
@@ -705,6 +704,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1048956675793928400, guid: 33b6a469062c44a48a4bbdbfa3e1e9f0, type: 3}
       insertIndex: -1
       addedObject: {fileID: 672131041}
+    - targetCorrespondingSourceObject: {fileID: 1048956675793928400, guid: 33b6a469062c44a48a4bbdbfa3e1e9f0, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 672131042}
   m_SourcePrefab: {fileID: 100100000, guid: 33b6a469062c44a48a4bbdbfa3e1e9f0, type: 3}
 --- !u!1001 &1083091356
 PrefabInstance:
@@ -894,6 +896,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 9102089459880986193, guid: 999c9df1ae9ff0641a8369f4be6b7ed5, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1355840320}
+    - targetCorrespondingSourceObject: {fileID: 9102089459880986193, guid: 999c9df1ae9ff0641a8369f4be6b7ed5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1355840321}
   m_SourcePrefab: {fileID: 100100000, guid: 999c9df1ae9ff0641a8369f4be6b7ed5, type: 3}
 --- !u!1 &1355840311 stripped
 GameObject:
@@ -1023,6 +1028,18 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &1355840321
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1355840311}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4839945b23c65441ba880b8eeea91a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyCombat
 --- !u!4 &1545926219 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7272847934316271958, guid: 33b6a469062c44a48a4bbdbfa3e1e9f0, type: 3}
@@ -1195,7 +1212,6 @@ GameObject:
   - component: {fileID: 1764761624}
   - component: {fileID: 1764761623}
   - component: {fileID: 1764761622}
-  - component: {fileID: 1764761621}
   m_Layer: 0
   m_Name: Enemy_Dummy (1)
   m_TagString: Monster
@@ -1203,19 +1219,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1764761621
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1764761620}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da0369b2c0ffd4d409d7daaa1588b35a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  hp: 100
 --- !u!65 &1764761622
 BoxCollider:
   m_ObjectHideFlags: 0

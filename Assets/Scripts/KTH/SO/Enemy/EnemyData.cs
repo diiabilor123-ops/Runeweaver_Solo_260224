@@ -23,13 +23,20 @@ public class EnemyData : ScriptableObject
     [Header("전투 능력치")]
     public float maxHp = 100f;
     public float moveSpeed = 3.5f;
-    public float damage = 10f;
+    public float attackDamage = 10f;
 
-    [Header("AI 설정")]
+    [Header("AI & 공격 범위")]
     public float detectionRange = 10f; // 플레이어 인지 범위
     public float attackRange = 2f;    // 공격 사거리
+    public float chargeDistance = 8f;  // 돌진 시도 거리 (추가 추천)
+
+    [Header("공격 타이밍")]
     public float attackCooldown = 2f; // 공격 쿨타임
     public float attackWarningTime = 0.5f; // 하데스식 공격 전조 시간 (번쩍임)
+
+    [Header("액션 디테일 (추천)")]
+    public float knockbackForce = 5f;      // 플레이어를 밀어내는 힘
+    public float stunDuration = 1.0f;      // 돌진 후 스스로 멈추는 시간 (Dizzy 상태)
 
     [Header("시각 연출")]
     public GameObject hitEffectPrefab;  // 피격 파티클
