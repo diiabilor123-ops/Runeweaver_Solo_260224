@@ -33,7 +33,9 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         float finalDamage = CalculateElementalDamage(amount, attackElement);
 
         currentHp -= finalDamage;
-        Debug.Log($"{gameObject.name} 피격! 데미지: {finalDamage} (원소: {attackElement})");
+
+        ShowDamagePopup(finalDamage);
+
 
         // 피격 연출 명령
         if (visuals != null) visuals.PlayHitFlash();
@@ -55,6 +57,33 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         }
 
         return amount * multiplier;
+    }
+
+    [Header("Damage UI")]
+    [SerializeField] private GameObject damageTextPrefab; // 아까 만든 프리팹을 여기에 넣을 거예요
+
+    private void ShowDamagePopup(float damage)
+    {
+        if (damageTextPrefab == null) return;
+
+        // 1. 소환 위치를 현재 내 머리 위로 고정
+        Vector3 spawnPos = transform.position + Vector3.up * 2.5f;
+
+        // [수정] Quaternion.Euler(X축, Y축, Z축)를 사용해 45도 회전값을 줍니다.
+        // 카메라 각도에 맞춰 X값도 조절해야 할 수 있습니다 (예: 45, 45, 0)
+        Quaternion rotation = Quaternion.Euler(0, 45f, 0);
+
+        // 2. 소환! (Quaternion.identity는 회전값 0을 의미함)
+        GameObject popup = Instantiate(damageTextPrefab, spawnPos, Quaternion.identity);
+
+        // [수정 포인트] 3. 스케일을 0.01로 고정하여 거대해지는 것 방지!
+        popup.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
+
+        // 4. 숫자 입력 (아까 만든 Setup 함수가 있다면 그걸 호출)
+        if (popup.TryGetComponent<DamagePopup>(out var popupScript))
+        {
+            popupScript.Setup(damage);
+        }
     }
 
     private void Die()
