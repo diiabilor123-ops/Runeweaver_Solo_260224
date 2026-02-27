@@ -11,6 +11,9 @@ public class PlayerHealth : MonoBehaviour, IDamageable // 1. ÀÎÅÍÆäÀÌ½º »ó¼Ó Ãß°
     private float currentHp;
     private bool isInvincible = false; // ¹«Àû »óÅÂ (¿¬¼Ó µ¥¹ÌÁö ¹æÁö)
 
+    [Header("Damage UI")]
+    [SerializeField] private GameObject damageTextPrefab; // ÇÃ·¹ÀÌ¾î¿ë ÆË¾÷ ÇÁ¸®ÆÕ ÇÒ´ç
+
     void Awake()
     {
         currentHp = maxHp;
@@ -23,9 +26,13 @@ public class PlayerHealth : MonoBehaviour, IDamageable // 1. ÀÎÅÍÆäÀÌ½º »ó¼Ó Ãß°
 
         if (isInvincible) return;
 
-        currentHp -= amount;
+        // [¼öÁ¤] °è»ê±â »ç¿ë (ÇÃ·¹ÀÌ¾î´Â targetData°¡ ¾øÀ¸¹Ç·Î null Àü´Þ)
+        DamageResult result = DamageCalculator.Calculate(amount, element, attackerTeam, null);
 
-        ShowDamagePopup(amount);
+        currentHp -= result.finalDamage;
+
+        // [¼öÁ¤] ÅëÇÕµÈ static ÇÔ¼ö È£Ãâ (ÇÃ·¹ÀÌ¾î: »¡°£»ö)
+        DamagePopup.SpawnPopup(damageTextPrefab, transform.position, result.finalDamage, result.isCritical, Color.red);
 
         if (currentHp <= 0)
         {
@@ -44,33 +51,6 @@ public class PlayerHealth : MonoBehaviour, IDamageable // 1. ÀÎÅÍÆäÀÌ½º »ó¼Ó Ãß°
         // ¿©±â¼­ ÇÇ°Ý È¿°ú(±ôºýÀÓ µî)¸¦ ³ÖÀ¸¸é ÁÁ½À´Ï´Ù.
         yield return new WaitForSeconds(0.5f);
         isInvincible = false;
-    }
-
-    [Header("Damage UI")]
-    [SerializeField] private GameObject damageTextPrefab; // ¾Æ±î ¸¸µç ÇÁ¸®ÆÕÀ» ¿©±â¿¡ ³ÖÀ» °Å¿¹¿ä
-
-    private void ShowDamagePopup(float damage)
-    {
-        if (damageTextPrefab == null) return;
-
-        // 1. ¼ÒÈ¯ À§Ä¡¸¦ ÇöÀç ³» ¸Ó¸® À§·Î °íÁ¤
-        Vector3 spawnPos = transform.position + Vector3.up * 2f;
-
-        // [¼öÁ¤] Quaternion.Euler(XÃà, YÃà, ZÃà)¸¦ »ç¿ëÇØ 45µµ È¸Àü°ªÀ» ÁÝ´Ï´Ù.
-        // Ä«¸Þ¶ó °¢µµ¿¡ ¸ÂÃç X°ªµµ Á¶ÀýÇØ¾ß ÇÒ ¼ö ÀÖ½À´Ï´Ù (¿¹: 45, 45, 0)
-        Quaternion rotation = Quaternion.Euler(0, 45f, 0);
-
-        // 2. ¼ÒÈ¯! (Quaternion.identity´Â È¸Àü°ª 0À» ÀÇ¹ÌÇÔ)
-        GameObject popup = Instantiate(damageTextPrefab, spawnPos, Quaternion.identity);
-
-        // [¼öÁ¤ Æ÷ÀÎÆ®] 3. ½ºÄÉÀÏÀ» 0.01·Î °íÁ¤ÇÏ¿© °Å´ëÇØÁö´Â °Í ¹æÁö!
-        popup.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
-
-        // 4. ¼ýÀÚ ÀÔ·Â (¾Æ±î ¸¸µç Setup ÇÔ¼ö°¡ ÀÖ´Ù¸é ±×°É È£Ãâ)
-        if (popup.TryGetComponent<DamagePopup>(out var popupScript))
-        {
-            popupScript.Setup(damage);
-        }
     }
 
     private void Die()

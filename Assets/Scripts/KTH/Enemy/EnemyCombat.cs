@@ -46,7 +46,7 @@ public class EnemyCombat : MonoBehaviour
         }
 
         // 2. 목표 지점 계산 (플레이어 너머로)
-        Vector3 targetPos = transform.position + (dir * (data.attackRange + 3.0f));
+        Vector3 targetPos = transform.position + (dir * (data.attackRange + 5.0f));
         float chargeSpeed = data.moveSpeed * 3.5f;
         bool hasDealtDamage = false;
 

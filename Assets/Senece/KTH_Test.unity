@@ -945,7 +945,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9102089459880986193, guid: 999c9df1ae9ff0641a8369f4be6b7ed5, type: 3}
       propertyPath: m_Name
-      value: Foe_creature
+      value: Boar
       objectReference: {fileID: 0}
     - target: {fileID: 9102089459880986193, guid: 999c9df1ae9ff0641a8369f4be6b7ed5, type: 3}
       propertyPath: m_TagString
@@ -979,6 +979,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 9102089459880986193, guid: 999c9df1ae9ff0641a8369f4be6b7ed5, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1355840321}
+    - targetCorrespondingSourceObject: {fileID: 9102089459880986193, guid: 999c9df1ae9ff0641a8369f4be6b7ed5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1355840324}
   m_SourcePrefab: {fileID: 100100000, guid: 999c9df1ae9ff0641a8369f4be6b7ed5, type: 3}
 --- !u!1 &1355840311 stripped
 GameObject:
@@ -1011,7 +1014,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8737c56f851dad94daa4133eb85a4cf3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyVisuals
-  targetMaterial: {fileID: 0}
+  hitMaterial: {fileID: 2100000, guid: 212c7d248e1132f4c8b3088415e5fc63, type: 2}
+  warningMaterial: {fileID: 0}
+  shieldParticlePrefab: {fileID: 0}
 --- !u!114 &1355840314
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1121,6 +1126,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4839945b23c65441ba880b8eeea91a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyCombat
+--- !u!114 &1355840324
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1355840311}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43068d7551e9a6f40a0431e6948d9b5a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyShield
+  maxShield: 50
 --- !u!4 &1545926219 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7272847934316271958, guid: 33b6a469062c44a48a4bbdbfa3e1e9f0, type: 3}

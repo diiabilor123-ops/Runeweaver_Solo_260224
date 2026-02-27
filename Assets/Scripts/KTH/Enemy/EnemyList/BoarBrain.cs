@@ -78,7 +78,7 @@ public class BoarBrain : EnemyBrain
             case State.Ready:
                 mover.Stop();
                 stateTimer = data.attackWarningTime;
-                visuals.PlayHitFlash(); // 기 모으는 연출
+                visuals.PlayWarningSignal(); // 기 모으는 연출
                 break;
 
             case State.Charge:

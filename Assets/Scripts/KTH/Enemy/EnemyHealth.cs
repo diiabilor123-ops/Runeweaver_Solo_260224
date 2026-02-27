@@ -11,6 +11,9 @@ public class EnemyHealth : MonoBehaviour, IDamageable
     private EnemyData data;
     private EnemyVisuals visuals;
 
+    [Header("Damage UI")]
+    [SerializeField] private GameObject damageTextPrefab; // 몬스터용 팝업 프리팹 할당
+
     public void Init(EnemyData data)
     {
         this.data = data;
@@ -28,62 +31,40 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         // [핵심 추가] 공격자가 같은 적군(Enemy) 팀이면 데미지를 입지 않음
         if (attackerTeam == Team.Enemy) return;
 
-        // [핵심] 여기서 원소 상성 계산 (팀장님 기획 반영 지점)
-        // 예: 내 속성이 불인데 물 공격을 받으면 1.5배
-        float finalDamage = CalculateElementalDamage(amount, attackElement);
+        // [수정] 보호막 컴포넌트 확인
+        EnemyShield shield = GetComponent<EnemyShield>();
+        float remainingDamage = amount;
 
-        currentHp -= finalDamage;
+        // 1. 보호막 데미지 처리
+        if (shield != null)
+        {
+            remainingDamage = shield.AbsorbDamage(amount);
 
-        ShowDamagePopup(finalDamage);
+            // [추가] 쉴드가 흡수한 데미지 텍스트 팝업 (쉴드 색상인 파란색 사용 예시)
+            float shieldedDamage = amount - remainingDamage;
+            if (shieldedDamage > 0)
+            {
+                // [수정] 쉴드 데미지도 계산기를 통해 크리티컬 판정 포함
+                DamageResult shieldResult = DamageCalculator.Calculate(shieldedDamage, attackElement, attackerTeam, data);
 
+                // [추가] 파란색 팝업 + 크리티컬 판정 반영
+                DamagePopup.SpawnPopup(damageTextPrefab, transform.position, shieldResult.finalDamage, shieldResult.isCritical, Color.blue);
+            }
+        }
 
-        // 피격 연출 명령
-        if (visuals != null) visuals.PlayHitFlash();
+        // 2. 실제 체력 데미지 처리
+        if (remainingDamage > 0)
+        {
+            DamageResult result = DamageCalculator.Calculate(remainingDamage, attackElement, attackerTeam, data);
+            currentHp -= result.finalDamage;
+
+            // [수정] 통합된 static 함수 호출 (일반: 흰색)
+            DamagePopup.SpawnPopup(damageTextPrefab, transform.position, result.finalDamage, result.isCritical, Color.white);
+
+            if (visuals != null) visuals.PlayHitFlash();
+        }
 
         if (currentHp <= 0) Die();
-    }
-
-    private float CalculateElementalDamage(float amount, ElementType attackElement)
-    {
-        float multiplier = 1.0f;
-
-        // [상성 로직 예시] 몬스터의 속성(data.mainElement)과 공격 속성 비교
-        if (data != null)
-        {
-            // 예: 불 몬스터에게 물 공격 시 1.5배
-            if (data.mainElement == ElementType.Pyro && attackElement == ElementType.Aqua) multiplier = 1.5f;
-            // 예: 물 몬스터에게 번개 공격 시 1.5배
-            if (data.mainElement == ElementType.Aqua && attackElement == ElementType.Volt) multiplier = 1.5f;
-        }
-
-        return amount * multiplier;
-    }
-
-    [Header("Damage UI")]
-    [SerializeField] private GameObject damageTextPrefab; // 아까 만든 프리팹을 여기에 넣을 거예요
-
-    private void ShowDamagePopup(float damage)
-    {
-        if (damageTextPrefab == null) return;
-
-        // 1. 소환 위치를 현재 내 머리 위로 고정
-        Vector3 spawnPos = transform.position + Vector3.up * 2.5f;
-
-        // [수정] Quaternion.Euler(X축, Y축, Z축)를 사용해 45도 회전값을 줍니다.
-        // 카메라 각도에 맞춰 X값도 조절해야 할 수 있습니다 (예: 45, 45, 0)
-        Quaternion rotation = Quaternion.Euler(0, 45f, 0);
-
-        // 2. 소환! (Quaternion.identity는 회전값 0을 의미함)
-        GameObject popup = Instantiate(damageTextPrefab, spawnPos, Quaternion.identity);
-
-        // [수정 포인트] 3. 스케일을 0.01로 고정하여 거대해지는 것 방지!
-        popup.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
-
-        // 4. 숫자 입력 (아까 만든 Setup 함수가 있다면 그걸 호출)
-        if (popup.TryGetComponent<DamagePopup>(out var popupScript))
-        {
-            popupScript.Setup(damage);
-        }
     }
 
     private void Die()
