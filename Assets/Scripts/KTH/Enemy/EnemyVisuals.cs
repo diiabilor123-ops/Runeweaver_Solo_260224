@@ -7,15 +7,32 @@ using System.Collections;
 /// </summary>
 public class EnemyVisuals : MonoBehaviour
 {
+    [Header("Materials")]
     [SerializeField] private Material hitMaterial;
     [SerializeField] private Material warningMaterial; // 돌진 전 기 모으는 용
+
+    [Header("Shield FX (Mesh Based)")]
+    [SerializeField] private GameObject shieldMeshFX; // 인스펙터에서 FX 메쉬 오브젝트 할당
+    [SerializeField] private float shieldShowDuration = 0.15f; // 표시 시간
+
+    //[수정] 이제 이 값은 "배수"로 작동합니다. (예: 1.2면 원래 크기의 120%)
+    [SerializeField] private Vector3 shieldImpactScaleMultiplier = new Vector3(1.2f, 1.2f, 1.2f);
+
+    //[추가] 쉴드 위치 오프셋 (예: Y축으로 1만큼 올림)
+    [SerializeField] private Vector3 shieldOffset = new Vector3(0, 1.0f, 0);
+
+    [Header("Particles")]
     [SerializeField] private GameObject shieldParticlePrefab; // [추가] 쉴드용 파티클 프리팹
 
 
     private Material originalMaterial;
     private Renderer targetRenderer;
     private Coroutine flashCoroutine;
+    private Coroutine shieldCoroutine;
     private Animator anim;
+
+    // [추가] 인스펙터에서 맞춰둔 쉴드의 원래 크기를 저장할 변수
+    private Vector3 shieldBaseScale;
 
     // [추가] 현재 쉴드 상태를 저장하는 변수
     public bool HasShield { get; set; } = false;
@@ -24,6 +41,13 @@ public class EnemyVisuals : MonoBehaviour
     {
         targetRenderer = GetComponentInChildren<Renderer>();
         anim = GetComponent<Animator>();
+
+        if (shieldMeshFX != null)
+        {
+            //[추가] 시작할 때 인스펙터에 설정된 크기를 미리 기억해둡니다.
+            shieldBaseScale = shieldMeshFX.transform.localScale;
+            shieldMeshFX.SetActive(false);
+        }
     }
 
     private void Start()
@@ -67,15 +91,57 @@ public class EnemyVisuals : MonoBehaviour
     /// </summary>
     public void PlayShieldEffect(Vector3 hitPoint)
     {
-        //[수정] 파티클 생성 시 위치 전달 및 부모 설정을 통해 몬스터와 함께 움직이게 함
-        GameObject shieldEffect = Instantiate(shieldParticlePrefab, hitPoint, Quaternion.identity);
-        shieldEffect.transform.SetParent(this.transform);
+        // 1. 파티클 생성 (자식으로 설정)
+        if (shieldParticlePrefab != null)
+        {
+            GameObject particle = Instantiate(shieldParticlePrefab, transform);
 
-        // (옵션) 이펙트가 너무 바닥에 붙어있다면 y축 오프셋 추가
-        shieldEffect.transform.localPosition = new Vector3(0, 1f, 0);
+            // 위치 설정
+            particle.transform.localPosition = hitPoint + shieldOffset;
 
+            // ⭐ 수정 부분: 생성 직후, 프리팹 원본의 스케일 값을 가져와서 적용
+            particle.transform.localScale = shieldParticlePrefab.transform.localScale;
+        }
 
-        Debug.Log("쉴드 피격! (파티클 재생)");
+        // 2. 메쉬 FX 애니메이션 실행
+        if (shieldMeshFX != null)
+        {
+            if (shieldCoroutine != null) StopCoroutine(shieldCoroutine);
+            shieldCoroutine = StartCoroutine(ShieldImpactRoutine());
+        }
+    }
+
+    private IEnumerator ShieldImpactRoutine()
+    {
+        // 쉴드 메쉬의 위치를 오프셋에 맞게 고정
+        shieldMeshFX.transform.localPosition = shieldOffset;
+
+        // [계산] 원래 크기에 인스펙터의 배수를 곱해서 충격 시 크기를 결정합니다.
+        Vector3 targetScale = new Vector3(
+            shieldBaseScale.x * shieldImpactScaleMultiplier.x,
+            shieldBaseScale.y * shieldImpactScaleMultiplier.y,
+            shieldBaseScale.z * shieldImpactScaleMultiplier.z
+        );
+
+        shieldMeshFX.SetActive(true);
+
+        float elapsed = 0f;
+
+        // 하데스 스타일: targetScale(커진 상태)에서 shieldBaseScale(원래 맞춰둔 크기)로 복구
+        while (elapsed < shieldShowDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / shieldShowDuration;
+
+            // 역방향 Lerp (큰 -> 원래대로)
+            shieldMeshFX.transform.localScale = Vector3.Lerp(targetScale, shieldBaseScale, t);
+
+            yield return null;
+        }
+
+        // 확실하게 원래 크기로 고정 후 비활성화
+        shieldMeshFX.transform.localScale = shieldBaseScale;
+        shieldMeshFX.SetActive(false);
     }
 
     // --- [추가] 피격 애니메이션 트리거 ---

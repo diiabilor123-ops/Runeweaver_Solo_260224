@@ -46,8 +46,6 @@ public class EnemyHealth : MonoBehaviour, IDamageable
                 DamageResult sResult = DamageCalculator.Calculate(shieldedAmount, hitData.element, hitData.attackerTeam, data);
                 DamagePopup.SpawnPopup(damageTextPrefab, transform.position, sResult.finalDamage, sResult.isCritical, Color.blue);
 
-                // 쉴드 이펙트 재생 (EnemyShield에서 이미 호출 중일 수 있으니 확인 필요)
-                if (visuals != null) visuals.PlayShieldEffect(transform.position);
             }
         }
 

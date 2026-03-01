@@ -35,7 +35,7 @@ public class EnemyShield : MonoBehaviour
         Debug.Log($"{gameObject.name} 보호막 잔량: {currentShield}");
 
         // [수정] 쉴드 피격 파티클 연출 위치를 몬스터의 현재 위치로 전달
-        if (visuals != null) visuals.PlayShieldEffect(transform.position);
+        if (visuals != null) visuals.PlayShieldEffect(Vector3.zero);
 
         if (currentShield <= 0)
         {
