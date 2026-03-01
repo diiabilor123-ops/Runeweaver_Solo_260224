@@ -19,15 +19,15 @@ public class PlayerHealth : MonoBehaviour, IDamageable // 1. 인터페이스 상속 추�
         currentHp = maxHp;
     }
 
-    public void TakeDamage(float amount, ElementType element, Team attackerTeam)
+    public void TakeDamage(HitData hitData)
     {
         // [팀킬 방지] 공격자가 같은 Player 팀이면 데미지를 무시합니다.
-        if (attackerTeam == Team.Player) return;
+        if (hitData.attackerTeam == Team.Player || isInvincible) return;
 
         if (isInvincible) return;
 
         // [수정] 계산기 사용 (플레이어는 targetData가 없으므로 null 전달)
-        DamageResult result = DamageCalculator.Calculate(amount, element, attackerTeam, null);
+        DamageResult result = DamageCalculator.Calculate(hitData.damage, hitData.element, hitData.attackerTeam, null);
 
         currentHp -= result.finalDamage;
 

@@ -13,6 +13,9 @@ public class EnemyCombat : MonoBehaviour
     private Transform player;
     private bool isAttacking = false; // 중복 공격 방지
 
+    // [핵심] 몬스터마다 이 수치를 인스펙터에서 다르게 설정 가능!
+    [SerializeField] private HitData attackData = new HitData();
+
     public bool IsAttacking => isAttacking;
 
     public void Init(EnemyData data, Transform player)
@@ -20,6 +23,10 @@ public class EnemyCombat : MonoBehaviour
         this.data = data;
         this.player = player;
         anim = GetComponent<Animator>();
+
+        // 초기화 시 데이터 기본값 설정 (필요시)
+        attackData.attackerTeam = Team.Enemy;
+        attackData.element = data.mainElement;
     }
 
     /// <summary>
@@ -65,9 +72,23 @@ public class EnemyCombat : MonoBehaviour
                 // 플레이어가 IDamageable을 가지고 있는지 확인합니다.
                 if (player.TryGetComponent<IDamageable>(out var target))
                 {
-                    // 몬스터의 데미지와 본인의 속성(data.mainElement)을 함께 전달합니다.
-                    // 세 번째 인자로 Team.Enemy를 전달합니다.
-                    target.TakeDamage(data.attackDamage, data.mainElement, Team.Enemy);
+                    // 1. 보따리(HitData) 생성
+                    // [수정] 인스펙터에 설정된 데이터를 보따리에 담기
+                    // [핵심] 보따리에 이펙트 프리팹까지 담아서 전달!
+                    HitData hit = new HitData
+                    {
+                        damage = data.attackDamage,
+                        element = attackData.element,
+                        attackerTeam = Team.Enemy,
+                        hitPoint = player.position,
+                        attackerPos = transform.position,
+                        // !!! [추가] 돌진 전용 피격 이펙트 할당 !!!
+                        hitEffectPrefab = data.playerHitEffect
+                    };
+
+                    // 2. 전달 (이제 에러가 나지 않습니다)
+                    target.TakeDamage(hit);
+
                     hasDealtDamage = true;
                     Debug.Log($"{gameObject.name}이(가) 돌진으로 플레이어를 타격!");
                 }
@@ -104,8 +125,18 @@ public class EnemyCombat : MonoBehaviour
         {
             if (player.TryGetComponent<IDamageable>(out var target))
             {
-                // 마찬가지로 Team.Enemy 전달
-                target.TakeDamage(data.attackDamage * 0.5f, data.mainElement, Team.Enemy);
+                // [수정] 인스펙터에 설정된 데이터를 보따리에 담기
+                HitData hit = new HitData
+                {
+                    damage = data.attackDamage * 0.5f,
+                    element = attackData.element,
+                    attackerTeam = Team.Enemy,
+                    hitPoint = player.position,
+                    attackerPos = transform.position,
+                    hitEffectPrefab = data.playerHitEffect
+                };
+
+                target.TakeDamage(hit);
             }
         }
 

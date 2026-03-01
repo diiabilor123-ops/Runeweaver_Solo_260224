@@ -1,49 +1,51 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 
 /// <summary>
-/// [¸ó½ºÅÍ ½Ã°¢ È¿°ú ¹× ¿¬Ãâ]
-/// Hit Flash(¹øÂ½ÀÓ), ¾Ö´Ï¸ŞÀÌ¼Ç Á¦¾î, ÆÄÆ¼Å¬ »ı¼ºÀ» ´ã´çÇÕ´Ï´Ù.
+/// [ëª¬ìŠ¤í„° ì‹œê° íš¨ê³¼ ë° ì—°ì¶œ]
+/// Hit Flash(ë²ˆì©ì„), ì• ë‹ˆë©”ì´ì…˜ ì œì–´, íŒŒí‹°í´ ìƒì„±ì„ ë‹´ë‹¹í•©ë‹ˆë‹¤.
 /// </summary>
 public class EnemyVisuals : MonoBehaviour
 {
     [SerializeField] private Material hitMaterial;
-    [SerializeField] private Material warningMaterial; // µ¹Áø Àü ±â ¸ğÀ¸´Â ¿ë
-    [SerializeField] private GameObject shieldParticlePrefab; // [Ãß°¡] ½¯µå¿ë ÆÄÆ¼Å¬ ÇÁ¸®ÆÕ
+    [SerializeField] private Material warningMaterial; // ëŒì§„ ì „ ê¸° ëª¨ìœ¼ëŠ” ìš©
+    [SerializeField] private GameObject shieldParticlePrefab; // [ì¶”ê°€] ì‰´ë“œìš© íŒŒí‹°í´ í”„ë¦¬íŒ¹
+
 
     private Material originalMaterial;
     private Renderer targetRenderer;
     private Coroutine flashCoroutine;
+    private Animator anim;
 
-    // [Ãß°¡] ÇöÀç ½¯µå »óÅÂ¸¦ ÀúÀåÇÏ´Â º¯¼ö
+    // [ì¶”ê°€] í˜„ì¬ ì‰´ë“œ ìƒíƒœë¥¼ ì €ì¥í•˜ëŠ” ë³€ìˆ˜
     public bool HasShield { get; set; } = false;
 
     private void Awake()
     {
         targetRenderer = GetComponentInChildren<Renderer>();
-
+        anim = GetComponent<Animator>();
     }
 
     private void Start()
     {
         if (targetRenderer != null)
         {
-            // [ÇØ°á] Start¿¡¼­ ÃÊ±âÈ­ÇÏ¿© »ı¼º ½ÃÁ¡ ÀÌ½´ ¹æÁö
-            // materialÀ» È£ÃâÇÏ¸é ÀÚµ¿À¸·Î ÀÎ½ºÅÏ½ºÈ­µÊ
+            // [í•´ê²°] Startì—ì„œ ì´ˆê¸°í™”í•˜ì—¬ ìƒì„± ì‹œì  ì´ìŠˆ ë°©ì§€
+            // materialì„ í˜¸ì¶œí•˜ë©´ ìë™ìœ¼ë¡œ ì¸ìŠ¤í„´ìŠ¤í™”ë¨
             originalMaterial = targetRenderer.material;
 
-            // È®½ÇÇÏ°Ô ÃÊ±â EmissionÀº ²¨µÒ
+            // í™•ì‹¤í•˜ê²Œ ì´ˆê¸° Emissionì€ êº¼ë‘ 
             originalMaterial.SetColor("_EmissionColor", Color.black);
             targetRenderer.material = originalMaterial;
         }
     }
 
     /// <summary>
-    /// ½ÇÁ¦ µ¥¹ÌÁö¸¦ ¹Ş¾ÒÀ» ¶§ È£Ãâ (ºü¸¥ ¹øÂ½ÀÓ)
+    /// ì‹¤ì œ ë°ë¯¸ì§€ë¥¼ ë°›ì•˜ì„ ë•Œ í˜¸ì¶œ (ë¹ ë¥¸ ë²ˆì©ì„)
     /// </summary>
     public void PlayHitFlash()
     {
-        // [¼öÁ¤] ½¯µå°¡ ÀÖ´Â »óÅÂ¸é ÇÏ¾á»ö ¹øÂ½ÀÓÀ» ½ÇÇàÇÏÁö ¾Ê½À´Ï´Ù.
+        // [ìˆ˜ì •] ì‰´ë“œê°€ ìˆëŠ” ìƒíƒœë©´ í•˜ì–€ìƒ‰ ë²ˆì©ì„ì„ ì‹¤í–‰í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.
         if (HasShield) return;
 
         if (flashCoroutine != null) StopCoroutine(flashCoroutine);
@@ -51,39 +53,67 @@ public class EnemyVisuals : MonoBehaviour
     }
 
     /// <summary>
-    /// µ¹Áø ¿¹°í ½Ã È£Ãâ (Áö¼ÓµÇ´Â ¹øÂ½ÀÓ)
+    /// ëŒì§„ ì˜ˆê³  ì‹œ í˜¸ì¶œ (ì§€ì†ë˜ëŠ” ë²ˆì©ì„)
     /// </summary>
     public void PlayWarningSignal()
     {
         if (flashCoroutine != null) StopCoroutine(flashCoroutine);
-        // ¿¹°í ½Ã°£(data.attackWarningTime) µ¿¾È Áö¼ÓµÇµµ·Ï ÇÏ°Å³ª °íÁ¤°ª Àû¿ë
+        // ì˜ˆê³  ì‹œê°„(data.attackWarningTime) ë™ì•ˆ ì§€ì†ë˜ë„ë¡ í•˜ê±°ë‚˜ ê³ ì •ê°’ ì ìš©
         flashCoroutine = StartCoroutine(FlashRoutine(warningMaterial, 0.5f));
     }
 
     /// <summary>
-    /// [Ãß°¡] ½¯µå ÇÇ°İ ½Ã È£ÃâµÇ´Â ¿¬Ãâ (ÆÄÆ¼Å¬ Àç»ı µî)
+    /// [ì¶”ê°€] ì‰´ë“œ í”¼ê²© ì‹œ í˜¸ì¶œë˜ëŠ” ì—°ì¶œ (íŒŒí‹°í´ ì¬ìƒ ë“±)
     /// </summary>
     public void PlayShieldEffect(Vector3 hitPoint)
     {
-        if (shieldParticlePrefab != null)
+        //[ìˆ˜ì •] íŒŒí‹°í´ ìƒì„± ì‹œ ìœ„ì¹˜ ì „ë‹¬ ë° ë¶€ëª¨ ì„¤ì •ì„ í†µí•´ ëª¬ìŠ¤í„°ì™€ í•¨ê»˜ ì›€ì§ì´ê²Œ í•¨
+        GameObject shieldEffect = Instantiate(shieldParticlePrefab, hitPoint, Quaternion.identity);
+        shieldEffect.transform.SetParent(this.transform);
+
+        // (ì˜µì…˜) ì´í™íŠ¸ê°€ ë„ˆë¬´ ë°”ë‹¥ì— ë¶™ì–´ìˆë‹¤ë©´ yì¶• ì˜¤í”„ì…‹ ì¶”ê°€
+        shieldEffect.transform.localPosition = new Vector3(0, 1f, 0);
+
+
+        Debug.Log("ì‰´ë“œ í”¼ê²©! (íŒŒí‹°í´ ì¬ìƒ)");
+    }
+
+    // --- [ì¶”ê°€] í”¼ê²© ì• ë‹ˆë©”ì´ì…˜ íŠ¸ë¦¬ê±° ---
+    public void PlayHitAnimation()
+    {
+        if (anim != null)
         {
-            Instantiate(shieldParticlePrefab, hitPoint, Quaternion.identity);
+            // Animator Controllerì—ì„œ "Hit" Triggerê°€ ì„¤ì •ë˜ì–´ ìˆì–´ì•¼ í•©ë‹ˆë‹¤.
+            anim.SetTrigger("Hit");
         }
-        Debug.Log("½¯µå ÇÇ°İ! (ÆÄÆ¼Å¬ Àç»ı)");
     }
 
     private IEnumerator FlashRoutine(Material targetMat, float duration)
     {
         if (targetRenderer == null || targetMat == null) yield break;
 
-        // [ÃÖÀûÈ­ ¹æ½Ä ´ë½Å ¸ÓÆ¼¸®¾ó ±³Ã¼ ¹æ½ÄÀ» »ç¿ëÇÏ¿© ´«¿¡ º¸ÀÌ°Ô ÇÔ]
+        // [ìµœì í™” ë°©ì‹ ëŒ€ì‹  ë¨¸í‹°ë¦¬ì–¼ êµì²´ ë°©ì‹ì„ ì‚¬ìš©í•˜ì—¬ ëˆˆì— ë³´ì´ê²Œ í•¨]
         targetRenderer.material = targetMat;
 
-        // [ÇØ°á] ³Ê¹« ÂªÀº ½Ã°£Àº ÇÁ·¹ÀÓ ¹®Á¦¸¦ ÀÏÀ¸Å³ ¼ö ÀÖÀ¸¹Ç·Î ÃÖ¼Ò 1ÇÁ·¹ÀÓ ÀÌ»ó ´ë±â ±ÇÀå
-        // ÇÏµ¥½º ½ºÅ¸ÀÏ 0.04f Àû¿ë
+        // [í•´ê²°] ë„ˆë¬´ ì§§ì€ ì‹œê°„ì€ í”„ë ˆì„ ë¬¸ì œë¥¼ ì¼ìœ¼í‚¬ ìˆ˜ ìˆìœ¼ë¯€ë¡œ ìµœì†Œ 1í”„ë ˆì„ ì´ìƒ ëŒ€ê¸° ê¶Œì¥
+        // í•˜ë°ìŠ¤ ìŠ¤íƒ€ì¼ 0.04f ì ìš©
         yield return new WaitForSeconds(duration);
 
-        targetRenderer.material = originalMaterial; // µÇµ¹¸²
+        targetRenderer.material = originalMaterial; // ë˜ëŒë¦¼
+    }
+
+    // [ì¶”ê°€] ëª¬ìŠ¤í„°ê°€ ê³µê²©í–ˆì„ ë•Œ í”Œë ˆì´ì–´ì—ê²Œ í”¼ê²© ì´í™íŠ¸ ìƒì„±
+    public void PlayAttackHitVisual(HitData hitData)
+    {
+        if (hitData.hitEffectPrefab != null)
+        {
+            Instantiate(hitData.hitEffectPrefab, hitData.hitPoint, Quaternion.identity);
+            Debug.Log("í”Œë ˆì´ì–´ í”¼ê²© ì´í™íŠ¸ ìƒì„±!");
+        }
+        else
+        {
+            Debug.LogWarning("í”¼ê²© ì´í™íŠ¸ í”„ë¦¬íŒ¹ì´ ì„¤ì •ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
+        }
     }
 
 }

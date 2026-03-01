@@ -13,8 +13,8 @@ public enum Team { Player, Enemy, Neutral }
 
 public interface IDamageable
 {
-    // 원소(ElementType) 인자를 추가하여 상성 데미지를 계산할 수 있게 확장
-    void TakeDamage(float amount, ElementType element, Team attackerTeam);
+    // [수정] 이제 모든 데미지 전달은 HitData 보따리 하나로 통일합니다.
+    void TakeDamage(HitData hitData);
 
 }
 

@@ -39,6 +39,6 @@ public class EnemyData : ScriptableObject
     public float stunDuration = 1.0f;      // 돌진 후 스스로 멈추는 시간 (Dizzy 상태)
 
     [Header("시각 연출")]
-    public GameObject hitEffectPrefab;  // 피격 파티클
+    public GameObject playerHitEffect;  // 피격 파티클
     public GameObject deathEffectPrefab; // 사망 파티클
 }

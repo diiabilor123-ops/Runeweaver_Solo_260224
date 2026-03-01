@@ -29,49 +29,33 @@ public class Bullet_NormalArrow : MonoBehaviour
         if (bulletbase == null || !bulletbase.IsActive) return;
 
         // 1. [환경 충돌] 벽이나 장애물에 부딪혔을 때
-        if (other.CompareTag("Wall"))
-        {
-            visuals.PlayHitVisual(transform.position); // 시각/사운드 통합 처리 요청
-            bulletbase.Deactivate();
-            return;
-        }
+        if (other.CompareTag("Wall")) { /* 기존 벽 충돌 로직 */ return; }
 
         // 2. [전투 충돌] 데미지를 입을 수 있는 대상(IDamageableTest)인지 확인
         // 전투 충돌
-        if (other.TryGetComponent(out IDamageable target))
+        if (other.TryGetComponent(out EnemyHealth target))
         {
-            // [핵심] 쿨타임 체크: 이미 이 화살에 맞은 적이라면 다시 데미지를 주지 않고 통과합니다.
             if (hitTargets.Contains(target)) return;
 
-            // 세 번째 인자로 Team.Player를 전달합니다.
-            float damage = 10f * bulletbase.Data.damageMultiplier;
-            target.TakeDamage(damage, ElementType.None, Team.Player);
+            // [수정] 화살이 데이터를 가져와서 보따리를 싸서 몬스터에게 전달!
+            HitData hit = new HitData
+            {
+                damage = 10f * bulletbase.Data.damageMultiplier,
+                element = ElementType.None, // 화살 SO에서 가져오면 더 좋음
+                attackerTeam = Team.Player,
+                hitPoint = transform.position,
+                attackerPos = transform.position, // 화살 위치에서 넉백 발생
+                hitEffectPrefab = visuals.monsterHitEffectPrefab // 화살 데이터에 설정된 몬스터 피격 파티클
+            };
 
-            // [핵심] 처음 맞은 적이라면 목록에 추가하여 다음 번 충돌 시 무시되도록 합니다.
+            // 보따리 전달
+            target.TakeDamage(hit);
+
             hitTargets.Add(target);
-
-            // [변경] 투사체는 visuals에게 "나 맞았으니까 피드백 다 해줘"라고 한 줄만 보냅니다.
-            if (visuals != null)
-            {
-                visuals.PlayHitVisual(transform.position);
-            }
-
-            // 관통 기능이 없다면 즉시 비활성화
-            if (!bulletbase.Data.isPenetrating)
-            {
-                bulletbase.Deactivate();
-            }
+            // 투사체가 적중했다는 사실만 EffectVisuals에 알림
+            if (visuals != null) visuals.PlayHitVisual(transform.position);
+            if (!bulletbase.Data.isPenetrating) bulletbase.Deactivate();
         }
     }
 
-    /// <summary>
-    /// 적중 시 시각 연출(VFX)을 통합 관리합니다.
-    /// </summary>
-    private void HandleImpactEffect()
-    {
-        if (visuals != null)
-        {
-            visuals.PlayHitVisual(transform.position);
-        }
-    }
 }

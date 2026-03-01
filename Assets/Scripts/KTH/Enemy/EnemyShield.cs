@@ -1,11 +1,11 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class EnemyShield : MonoBehaviour
 {
     [SerializeField] private float maxShield = 50f;
     private float currentShield;
 
-    // º¸È£¸· UI (³ë¶õ»ö ¼ÎÀÌ´õ µî) ¿¬µ¿À» À§ÇØ ÇÊ¿ä
+    // ë³´í˜¸ë§‰ UI (ë…¸ë€ìƒ‰ ì…°ì´ë” ë“±) ì—°ë™ì„ ìœ„í•´ í•„ìš”
     private EnemyVisuals visuals;
 
     void Awake()
@@ -15,32 +15,32 @@ public class EnemyShield : MonoBehaviour
     }
 
     /// <summary>
-    /// µ¥¹ÌÁö¸¦ º¸È£¸·ÀÌ ¸ÕÀú Èí¼öÇÕ´Ï´Ù.
+    /// ë°ë¯¸ì§€ë¥¼ ë³´í˜¸ë§‰ì´ ë¨¼ì € í¡ìˆ˜í•©ë‹ˆë‹¤.
     /// </summary>
-    /// <returns>º¸È£¸·ÀÌ Èí¼öÇÑ ÈÄ ³²Àº µ¥¹ÌÁö</returns>
+    /// <returns>ë³´í˜¸ë§‰ì´ í¡ìˆ˜í•œ í›„ ë‚¨ì€ ë°ë¯¸ì§€</returns>
     public float AbsorbDamage(float damage)
     {
         if (currentShield <= 0)
         {
-            if (visuals != null) visuals.HasShield = false; // [Ãß°¡] ½¯µå ¾øÀ½ ¼³Á¤
+            if (visuals != null) visuals.HasShield = false; // [ì¶”ê°€] ì‰´ë“œ ì—†ìŒ ì„¤ì •
             return damage;
         }
 
-        // [Ãß°¡] ½¯µå ÀÖÀ½ ¼³Á¤
+        // [ì¶”ê°€] ì‰´ë“œ ìˆìŒ ì„¤ì •
         if (visuals != null) visuals.HasShield = true;
 
         float damageToShield = Mathf.Min(currentShield, damage);
         currentShield -= damageToShield;
 
-        // [°³¼±] ½¯µå ÇÇ°İ ÆÄÆ¼Å¬ ¿¬Ãâ (À§Ä¡°ª Àü´Ş)
-        if (visuals != null) visuals.PlayShieldEffect(transform.position);
+        Debug.Log($"{gameObject.name} ë³´í˜¸ë§‰ ì”ëŸ‰: {currentShield}");
 
-        Debug.Log($"{gameObject.name} º¸È£¸· ÀÜ·®: {currentShield}");
+        // [ìˆ˜ì •] ì‰´ë“œ í”¼ê²© íŒŒí‹°í´ ì—°ì¶œ ìœ„ì¹˜ë¥¼ ëª¬ìŠ¤í„°ì˜ í˜„ì¬ ìœ„ì¹˜ë¡œ ì „ë‹¬
+        if (visuals != null) visuals.PlayShieldEffect(transform.position);
 
         if (currentShield <= 0)
         {
-            // [¿¬Ãâ] º¸È£¸· ÆÄ±« È¿°ú
-            Debug.Log($"{gameObject.name} º¸È£¸· ÆÄ±«!");
+            // [ì—°ì¶œ] ë³´í˜¸ë§‰ íŒŒê´´ íš¨ê³¼
+            Debug.Log($"{gameObject.name} ë³´í˜¸ë§‰ íŒŒê´´!");
         }
 
         return damage - damageToShield;

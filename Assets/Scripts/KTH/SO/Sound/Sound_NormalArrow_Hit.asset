@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d4119afefd011c499fe7e30ac9c579b, type: 3}
   m_Name: Sound_NormalArrow_Hit
   m_EditorClassIdentifier: 
-  clip: {fileID: 0}
+  clip: {fileID: 8300000, guid: fa47f82b62a3b564f9891fcfd602f461, type: 3}
   volume: 1
   minPitch: 0.9
   maxPitch: 1.1

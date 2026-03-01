@@ -9,6 +9,13 @@ public class EffectVisuals : MonoBehaviour
     private BulletBase bulletbase;          // 물리/데이터 정보 참조
     private EffectControl currentmainEffect; // 생성된 실제 이펙트 컨트롤러
 
+    [Header("Hit Effects")]
+    public GameObject monsterHitEffectPrefab; // 할당 필요
+
+    // [추가] 사운드 SO 할당
+    [Header("Sounds")]
+    public SoundDataSO hitSoundSO;
+
     void Awake()
     {
         // 동일한 오브젝트에 붙은 물리 기반 스크립트 참조
@@ -43,23 +50,43 @@ public class EffectVisuals : MonoBehaviour
     // EffectVisuals.cs 수정본
     public void PlayHitVisual(Vector3 hitPosition) // Vector3 인자 추가
     {
-        // 1. 시각 효과 (VFX) 실행
-        if (currentmainEffect != null)
+        // 1. 파티클 생성
+        if (monsterHitEffectPrefab != null)
         {
-            currentmainEffect.TriggerHit(bulletbase.Data.isPenetrating, hitPosition);
+            Instantiate(monsterHitEffectPrefab, hitPosition, Quaternion.identity);
         }
 
-        // 2. 사운드 재생
-        if (bulletbase.Data.hitSound != null && SoundManager.Instance != null)
+        // 2. [핵심] 사운드 매니저를 통해 소리 재생 (랜덤 피치 포함)
+        if (hitSoundSO != null && SoundManager.Instance != null)
         {
-            // SoundManager가 이제 위치값을 받으므로 hitPosition을 넘겨줍니다.
-            SoundManager.Instance.Play(bulletbase.Data.hitSound, hitPosition);
+            SoundManager.Instance.Play(hitSoundSO, hitPosition);
         }
 
         // 3. 역경직 실행
         if (FeedbackManager.Instance != null)
         {
             FeedbackManager.Instance.PlayHitStop(0.05f); // 0.05초간 하데스식 멈춤
+        }
+    }
+
+    // [추가] 몬스터 적중 시 연출 처리
+    public void PlayMonsterHitVisual(Vector3 hitPosition, GameObject specificHitEffect = null)
+    {
+        // 1. HitData에 전달된 전용 이펙트가 있다면 우선 생성
+        if (specificHitEffect != null)
+        {
+            Instantiate(specificHitEffect, hitPosition, Quaternion.identity);
+        }
+        // 2. 없다면 데이터에 설정된 기본 적중 이펙트 생성
+        else if (bulletbase.Data != null && bulletbase.Data.hitEffect != null)
+        {
+            Instantiate(bulletbase.Data.hitEffect, hitPosition, Quaternion.identity);
+        }
+
+        // 3. 사운드 재생 (HitData에서 받아오면 더 좋음)
+        if (bulletbase.Data != null && bulletbase.Data.hitSound != null && SoundManager.Instance != null)
+        {
+            SoundManager.Instance.Play(bulletbase.Data.hitSound, hitPosition);
         }
     }
 }
