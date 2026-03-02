@@ -1,15 +1,41 @@
+ï»¿// FeedbackManager.cs ìˆ˜ì •ë³¸
 using UnityEngine;
 using System.Collections;
+using Unity.Cinemachine; // ì‹œë„¤ë¨¸ì‹  3.0 ë„¤ì„ìŠ¤í˜ì´ìŠ¤ ì¶”ê°€
 
-// '¿ª°æÁ÷(HitStop)'°ú 'Ä«¸Ş¶ó Èçµé¸²'À» È£Ãâ
 public class FeedbackManager : MonoBehaviour
 {
     public static FeedbackManager Instance;
 
-    private void Awake() => Instance = this;
+    [Header("Impulse")]
+    // ì´ ìŠ¤í¬ë¦½íŠ¸ê°€ ë¶™ì€ ì˜¤ë¸Œì íŠ¸ì— 'Cinemachine Impulse Source'ë¥¼ ì¶”ê°€í•˜ê³  ì—¬ê¸°ì— í• ë‹¹í•˜ì„¸ìš”.
+    [SerializeField] private CinemachineImpulseSource _impulseSource;
 
-    // ÇÏµ¥½º½Ä ¿ª°æÁ÷ (HitStop)
-    public void PlayHitStop(float duration)
+    private void Awake()
+    {
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
+
+        if (_impulseSource == null) _impulseSource = GetComponent<CinemachineImpulseSource>();
+    }
+
+    // â­ í•µì‹¬: íƒ€ê²© í”¼ë“œë°± í†µí•© ì‹¤í–‰ í•¨ìˆ˜ (ì—­ê²½ì§ + í”ë“¤ë¦¼)
+    public void ExecuteHitFeedback(BulletDataSO data)
+    {
+        if (data == null) return;
+
+        // 1. ì—­ê²½ì§ ì‹¤í–‰ (SO ë°ì´í„° í™œìš©)
+        PlayHitStop(data.hitStopDuration);
+
+        // 2. ì¹´ë©”ë¼ í”ë“¤ë¦¼ ì‹¤í–‰ (SO ë°ì´í„° í™œìš©)
+        if (_impulseSource != null && data.shakeIntensity > 0)
+        {
+            _impulseSource.GenerateImpulse(data.shakeIntensity);
+        }
+    }
+
+    // ì—­ê²½ì§ (TimeScale ì¡°ì ˆ)
+    private void PlayHitStop(float duration)
     {
         if (duration <= 0) return;
         StartCoroutine(HitStopRoutine(duration));
@@ -17,14 +43,8 @@ public class FeedbackManager : MonoBehaviour
 
     private IEnumerator HitStopRoutine(float duration)
     {
-        Time.timeScale = 0.05f; // ¿ÏÀüÈ÷ ¸ØÃß±âº¸´Ù ¾ÆÁÖ ¹Ì¼¼ÇÏ°Ô Èå¸£°Ô ÇÔ
+        Time.timeScale = 0.05f; // í•˜ë°ìŠ¤ì‹ ë¯¸ì„¸ ë©ˆì¶¤
         yield return new WaitForSecondsRealtime(duration);
         Time.timeScale = 1f;
-    }
-
-    // Ä«¸Ş¶ó Èçµé¸² (ÆÀ¿øÀÇ Ä«¸Ş¶ó¿¡ ½Ã³×¸Ó½Å µîÀÌ ÀÖ´Ù¸é ¿¬µ¿ °¡´É)
-    public void ShakeCamera(float intensity, float time)
-    {
-        // ¿©±â¿¡ Ä«¸Ş¶ó ½¦ÀÌÅ© ·ÎÁ÷ ±¸Çö
     }
 }

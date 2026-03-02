@@ -24,4 +24,10 @@ public class BulletDataSO : ScriptableObject
     public SoundDataSO shootSound;  // 1. 발사 시 (활 시위 소리)
     public SoundDataSO flySound;    // 2. 날아가는 동안 (공기 가르는 소리)
     public SoundDataSO hitSound;    // 3. 적중 시 (퍽/깡 소리)
+
+    [Header("Hit Feedback")]
+    [Tooltip("역경직 시간 (초). 0이면 역경직 없음")]
+    public float hitStopDuration = 0.05f;
+    [Tooltip("카메라 흔들림 강도")]
+    public float shakeIntensity = 0.1f;
 }

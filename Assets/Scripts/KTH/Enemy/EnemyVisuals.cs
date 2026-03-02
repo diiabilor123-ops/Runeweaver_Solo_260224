@@ -21,8 +21,15 @@ public class EnemyVisuals : MonoBehaviour
     //[추가] 쉴드 위치 오프셋 (예: Y축으로 1만큼 올림)
     [SerializeField] private Vector3 shieldOffset = new Vector3(0, 1.0f, 0);
 
+    [Header("Shield FX Settings")]
+    [SerializeField] private float shieldRotationSpeed = 100f; // 회전 속도 추가
+
     [Header("Particles")]
     [SerializeField] private GameObject shieldParticlePrefab; // [추가] 쉴드용 파티클 프리팹
+
+    [Header("Shield Polish")]
+    [SerializeField] private float hitFlashIntensity = 2.0f; // 피격 시 얼마나 밝게 빛날지
+    [SerializeField] private Color shieldColor = new Color(1f, 0.9f, 0.4f); // 쉴드 기본 색상
 
 
     private Material originalMaterial;
@@ -47,6 +54,15 @@ public class EnemyVisuals : MonoBehaviour
             //[추가] 시작할 때 인스펙터에 설정된 크기를 미리 기억해둡니다.
             shieldBaseScale = shieldMeshFX.transform.localScale;
             shieldMeshFX.SetActive(false);
+        }
+    }
+
+    private void Update()
+    {
+        // 쉴드 메쉬가 켜져 있을 때만 계속 회전시킵니다.
+        if (shieldMeshFX != null && shieldMeshFX.activeSelf)
+        {
+            shieldMeshFX.transform.Rotate(Vector3.up * shieldRotationSpeed * Time.deltaTime);
         }
     }
 
@@ -91,56 +107,78 @@ public class EnemyVisuals : MonoBehaviour
     /// </summary>
     public void PlayShieldEffect(Vector3 hitPoint)
     {
-        // 1. 파티클 생성 (자식으로 설정)
+        // 1. 파티클에 타격감을 몰아줍니다.
         if (shieldParticlePrefab != null)
         {
-            GameObject particle = Instantiate(shieldParticlePrefab, transform);
+            GameObject particleObj = Instantiate(shieldParticlePrefab, transform);
+            particleObj.transform.localPosition = hitPoint + shieldOffset;
 
-            // 위치 설정
-            particle.transform.localPosition = hitPoint + shieldOffset;
+            // 핵심: 생성된 객체를 활성화하고 파티클을 명시적으로 재생
+            particleObj.SetActive(true);
+            // 수정: Transform 스케일은 프리팹 그대로(보통 1,1,1) 둡니다.
+            particleObj.transform.localScale = shieldParticlePrefab.transform.localScale;
 
-            // ⭐ 수정 부분: 생성 직후, 프리팹 원본의 스케일 값을 가져와서 적용
-            particle.transform.localScale = shieldParticlePrefab.transform.localScale;
+            // 대신 파티클 시스템의 '시작 크기'에 배율을 곱해줍니다.
+            ParticleSystem ps = particleObj.GetComponent<ParticleSystem>();
+            if (ps != null)
+            {
+                var main = ps.main;
+                // shieldImpactScaleMultiplier.x 값을 배율로 활용
+                main.startSizeMultiplier *= shieldImpactScaleMultiplier.x;
+
+                ps.Play(); // 확실하게 재생 시작
+            }
+
+            // 일정 시간 후 삭제 (안 하면 맵에 프리팹 복사본이 계속 쌓입니다)
+            Destroy(particleObj, ps != null ? ps.main.duration + ps.main.startLifetime.constantMax : 1f);
         }
 
-        // 2. 메쉬 FX 애니메이션 실행
+        // 2. 메쉬 FX 애니메이션 (스케일 변화 대신 회전은 Update에서 수행, 여기선 활성화만)
         if (shieldMeshFX != null)
         {
             if (shieldCoroutine != null) StopCoroutine(shieldCoroutine);
-            shieldCoroutine = StartCoroutine(ShieldImpactRoutine());
+            shieldCoroutine = StartCoroutine(ShieldVisibleRoutine());
         }
     }
 
-    private IEnumerator ShieldImpactRoutine()
+    // 스케일 변화 없이 일정 시간 보여주기만 하는 루틴으로 변경
+    private IEnumerator ShieldVisibleRoutine()
     {
-        // 쉴드 메쉬의 위치를 오프셋에 맞게 고정
+        if (shieldMeshFX == null) yield break;
+
+        // 1. 초기 설정
         shieldMeshFX.transform.localPosition = shieldOffset;
-
-        // [계산] 원래 크기에 인스펙터의 배수를 곱해서 충격 시 크기를 결정합니다.
-        Vector3 targetScale = new Vector3(
-            shieldBaseScale.x * shieldImpactScaleMultiplier.x,
-            shieldBaseScale.y * shieldImpactScaleMultiplier.y,
-            shieldBaseScale.z * shieldImpactScaleMultiplier.z
-        );
-
         shieldMeshFX.SetActive(true);
 
-        float elapsed = 0f;
+        // 쉴드 전용 머티리얼 제어 (Emission 활용)
+        Renderer shieldRenderer = shieldMeshFX.GetComponent<Renderer>();
+        Material shieldMat = shieldRenderer.material;
 
-        // 하데스 스타일: targetScale(커진 상태)에서 shieldBaseScale(원래 맞춰둔 크기)로 복구
+        float elapsed = 0f;
+        // 하데스 스타일: 순간적으로 빠르게 돌았다가 멈춤 (가속도)
+        float boostRotation = shieldRotationSpeed * 3f;
+
         while (elapsed < shieldShowDuration)
         {
             elapsed += Time.deltaTime;
             float t = elapsed / shieldShowDuration;
 
-            // 역방향 Lerp (큰 -> 원래대로)
-            shieldMeshFX.transform.localScale = Vector3.Lerp(targetScale, shieldBaseScale, t);
+            // 연출 팁 1: 회전 속도 감쇠 (점점 느려짐)
+            float currentRotation = Mathf.Lerp(boostRotation, shieldRotationSpeed, t);
+            shieldMeshFX.transform.Rotate(Vector3.up * currentRotation * Time.deltaTime);
+
+            // 연출 팁 2: 밝기 조절 (피격 순간 반짝였다가 어두워짐)
+            // "_EmissionColor"는 표준 HDR 머티리얼에서 빛나는 색상을 조절합니다.
+            float intensity = Mathf.Lerp(hitFlashIntensity, 0f, t);
+            shieldMat.SetColor("_EmissionColor", shieldColor * intensity);
+
+            // 연출 팁 3: 스케일 미세 변화 (살짝 수축되는 느낌)
+            shieldMeshFX.transform.localScale = Vector3.Lerp(shieldBaseScale * 1.1f, shieldBaseScale, t);
 
             yield return null;
         }
 
-        // 확실하게 원래 크기로 고정 후 비활성화
-        shieldMeshFX.transform.localScale = shieldBaseScale;
+        // 마무리
         shieldMeshFX.SetActive(false);
     }
 

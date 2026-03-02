@@ -62,11 +62,6 @@ public class EffectVisuals : MonoBehaviour
             SoundManager.Instance.Play(hitSoundSO, hitPosition);
         }
 
-        // 3. 역경직 실행
-        if (FeedbackManager.Instance != null)
-        {
-            FeedbackManager.Instance.PlayHitStop(0.05f); // 0.05초간 하데스식 멈춤
-        }
     }
 
     // [추가] 몬스터 적중 시 연출 처리

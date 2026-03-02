@@ -1,44 +1,58 @@
-using UnityEngine;
+ï»¿using UnityEngine;
+using Unity.Cinemachine; // Cinemachine 3.0 ë„¤ìž„ìŠ¤íŽ˜ì´ìŠ¤
 
 namespace Runeweaver.Camera
 {
-    public class HadesCamera : MonoBehaviour
+    // [ì†Œì œëª©: ì‹œë„¤ë¨¸ì‹  ì—°ë™ ë° íŒŒì´í”„ë¼ì¸ í™•ìž¥]
+    // CinemachineExtensionì„ ìƒì†ë°›ì•„ ì‹œë„¤ë¨¸ì‹ ì˜ ê°€ìƒ ì¹´ë©”ë¼ ìœ„ì¹˜ ê³„ì‚° ê³¼ì •ì— ì§ì ‘ ê°œìž…í•©ë‹ˆë‹¤.
+    [ExecuteAlways]
+    [AddComponentMenu("Runeweaver/CameraFollow")]
+    public class CameraFollow : CinemachineComponentBase
     {
-        public Transform target;      // ÇÃ·¹ÀÌ¾î
-        public Vector3 offset = new Vector3(0, 12, -9); // °ñµç ¼öÄ¡
-        public float smoothTime = 0.2f; // Ä«¸Þ¶ó ¹ÝÀÀ ¼Óµµ (³·À»¼ö·Ï ºü¸§)
+        public Transform target;      // í”Œë ˆì´ì–´ ì˜¤ë¸Œì íŠ¸
+        public Vector3 offset = new Vector3(-9, 12, -9); // ì¹´ë©”ë¼ì˜ ê¸°ë³¸ ìƒëŒ€ ìœ„ì¹˜ (ê³¨ë“  ìˆ˜ì¹˜)
+        public float smoothTime = 0.2f; // ì¹´ë©”ë¼ê°€ ëª©í‘œ ìœ„ì¹˜ë¡œ ì´ë™í•˜ëŠ” ë¶€ë“œëŸ¬ì›€ ì •ë„
 
         [Header("Hades Dynamics")]
-        public float mouseInfluence = 3.0f;  // ¸¶¿ì½º ¹æÇâÀ¸·Î ¹Ð¾îÁÖ´Â Èû
-        public float moveInfluence = 2.0f;   // ÀÌµ¿ ¹æÇâÀ¸·Î ¹Ð¾îÁÖ´Â Èû
+        public float mouseInfluence = 1.0f;  // ë§ˆìš°ìŠ¤ ìœ„ì¹˜ì— ë”°ë¼ ì¹´ë©”ë¼ë¥¼ ë°€ì–´ì£¼ëŠ” íž˜
+        public float moveInfluence = 1.0f;   // í”Œë ˆì´ì–´ ì´ë™ ë°©í–¥ìœ¼ë¡œ ì‹œì•¼ë¥¼ í™•ë³´í•˜ëŠ” íž˜
 
-        private Vector3 _currentVelocity;
-        private Vector3 _targetPos;
+        private UnityEngine.Camera _mainCamera;
 
-        private void LateUpdate()
+        // [ì†Œì œëª©: íŒŒì´í”„ë¼ì¸ ìŠ¤í…Œì´ì§€ ì •ì˜]
+        public override CinemachineCore.Stage Stage => CinemachineCore.Stage.Body;
+
+        protected void Awake()
+        {
+            _mainCamera = UnityEngine.Camera.main;
+        }
+
+        // [ì†Œì œëª©: ì¹´ë©”ë¼ ìœ„ì¹˜ ê³„ì‚° ë° ì—°ì¶œ ì ìš©]
+        // ì‹œë„¤ë¨¸ì‹ ì´ ê¸°ë³¸ ìœ„ì¹˜ë¥¼ ê³„ì‚°í•œ í›„, ì´ í•¨ìˆ˜ê°€ í˜¸ì¶œë˜ì–´ ìœ„ì¹˜ë¥¼ ìµœì¢… ë³´ì •í•©ë‹ˆë‹¤.
+        // 2. PostPipelineStageCallback ëŒ€ì‹  OnPostPipelineStageë¥¼ ì‚¬ìš©í•©ë‹ˆë‹¤.
+        public override void MutateCameraState(ref CameraState state, float deltaTime)
         {
             if (target == null) return;
 
-            // 1. ±âº» À§Ä¡ (ÇÃ·¹ÀÌ¾î ¸Ó¸® À§)
-            _targetPos = target.position + offset;
+            // [ì†Œì œëª©: ì¹´ë©”ë¼ ìœ„ì¹˜ ê³„ì‚°]
+            // ê¸°ë³¸ íƒ€ê²Ÿ ìœ„ì¹˜ ê³„ì‚°
+            Vector3 targetPos = target.position + offset;
 
-            // 2. ¸¶¿ì½º ¿µÇâ·Â °è»ê (È­¸é Áß¾ÓÀ¸·ÎºÎÅÍ ¸¶¿ì½º À§Ä¡ÀÇ ¿ÀÇÁ¼Â)
-            Vector3 mousePos = Input.mousePosition;
-            Vector3 screenCenter = new Vector3(Screen.width / 2, Screen.height / 2, 0);
-            Vector3 mouseDir = (mousePos - screenCenter);
+            // [ì†Œì œëª©: ë§ˆìš°ìŠ¤ ë° ì´ë™ ì˜í–¥ë ¥ ì ìš©]
+            Vector3 mouseViewportPos = _mainCamera.ScreenToViewportPoint(Input.mousePosition);
+            Vector3 mouseDir = mouseViewportPos - new Vector3(0.5f, 0.5f, 0);
+            Vector3 mouseOffset = new Vector3(mouseDir.x, 0, mouseDir.y);
 
-            // È­¸é Å©±â¿¡ »ó°ü¾ø°Ô Á¤±ÔÈ­ ½ÃÅ² ÈÄ ¿µÇâ·Â °öÇÏ±â
-            Vector3 mouseOffset = new Vector3(mouseDir.x / screenCenter.x, 0, mouseDir.y / screenCenter.y);
-            _targetPos += mouseOffset * mouseInfluence;
+            targetPos += mouseOffset * mouseInfluence;
+            targetPos += target.forward * moveInfluence;
 
-            // 3. ÀÌµ¿ ¹æÇâ ¿µÇâ·Â (ÇÃ·¹ÀÌ¾î°¡ º¸°í ÀÖ´Â ¹æÇâÀ¸·Î ½Ã¾ß È®º¸)
-            _targetPos += target.forward * moveInfluence;
-
-            // 4. ÃÖÁ¾ ºÎµå·¯¿î ÀÌµ¿ (SmoothDamp°¡ Lerpº¸´Ù ÈÎ¾À ÂËµæÇÕ´Ï´Ù)
-            transform.position = Vector3.SmoothDamp(transform.position, _targetPos, ref _currentVelocity, smoothTime);
-
-            // 5. È¸Àü °íÁ¤ (ÇÏµ¥½º ½ÃÁ¡ X:55~60µµ)
-            // ¿¡µðÅÍ¿¡¼­ ¸ÂÃá È¸Àü°ªÀÌ À¯ÁöµÇµµ·Ï µÓ´Ï´Ù.
+            // [ì†Œì œëª©: ë¶€ë“œëŸ¬ìš´ ìœ„ì¹˜ í• ë‹¹ (3.0)]
+            // Position ì»´í¬ë„ŒíŠ¸ê°€ ê³„ì‚°í•œ ìœ„ì¹˜ë¥¼ ë®ì–´ì”ë‹ˆë‹¤.
+            state.RawPosition = Vector3.Lerp(state.RawPosition, targetPos, 1f - Mathf.Pow(0.001f, deltaTime / smoothTime));
         }
+
+        // [ì†Œì œëª©: íŒŒì´í”„ë¼ì¸ ìš°ì„ ìˆœìœ„]
+        // ìœ„ì¹˜ ì œì–´ ì»´í¬ë„ŒíŠ¸ê°€ ë¨¼ì € ê³„ì‚°ë˜ë„ë¡ ìš°ì„ ìˆœìœ„ë¥¼ ë†’ê²Œ ì„¤ì •í•©ë‹ˆë‹¤.
+        public override bool IsValid => target != null;
     }
 }
