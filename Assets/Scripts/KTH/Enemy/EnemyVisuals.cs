@@ -188,7 +188,7 @@ public class EnemyVisuals : MonoBehaviour
         if (anim != null)
         {
             // Animator Controller에서 "Hit" Trigger가 설정되어 있어야 합니다.
-            anim.SetTrigger("Hit");
+            //anim.SetTrigger("Hit");
         }
     }
 

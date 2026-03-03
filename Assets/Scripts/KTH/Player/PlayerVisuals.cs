@@ -23,6 +23,8 @@ public class PlayerVisuals : MonoBehaviour
     /// </summary>
     public void PlayHitVisual(HitData hitData)
     {
+        if (playerRenderer == null) return; // 방어 코드 추가
+
         // 1. 피격 이펙트 프리팹이 있다면 소환
         if (hitData.hitEffectPrefab != null)
         {

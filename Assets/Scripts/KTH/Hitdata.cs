@@ -9,6 +9,9 @@ public class HitData
     public ElementType element;
     public Team attackerTeam;
 
+    // [추가] 크리티컬 여부를 저장할 변수
+    public bool isCritical;
+
     [Header("Feedback Settings")]
     public Vector3 hitPoint;
     public Vector3 attackerPos;

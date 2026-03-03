@@ -37,10 +37,16 @@ public class Bullet_NormalArrow : MonoBehaviour
         {
             if (hitTargets.Contains(target)) return;
 
+            // [핵심 수정] 1. DamageCalculator를 통해 데미지와 크리티컬 여부 계산
+            // 기본 데미지(10)에 SO의 배율을 곱해서 전달합니다.
+            float baseDamage = 10f * bulletbase.Data.damageMultiplier;
+            DamageResult result = DamageCalculator.Calculate(baseDamage, ElementType.None, Team.Player, target.enemyData);
+
             // [수정] 화살이 데이터를 가져와서 보따리를 싸서 몬스터에게 전달!
             HitData hit = new HitData
             {
-                damage = 10f * bulletbase.Data.damageMultiplier,
+                damage = result.finalDamage,       // 계산된 최종 데미지 적용
+                isCritical = result.isCritical,    // 크리티컬 여부 전달
                 element = ElementType.None, // 화살 SO에서 가져오면 더 좋음
                 attackerTeam = Team.Player,
                 hitPoint = transform.position,
@@ -50,6 +56,13 @@ public class Bullet_NormalArrow : MonoBehaviour
 
             // 보따리 전달
             target.TakeDamage(hit);
+
+            // [핵심 수정] 3. 계산 결과가 크리티컬인 경우에만 피드백 실행
+            if (result.isCritical && FeedbackManager.Instance != null)
+            {
+                // FeedbackManager에 설정된 크리티컬 전용 피드백(역경직+흔들림) 호출
+                FeedbackManager.Instance.PlayCritFeedback();
+            }
 
             hitTargets.Add(target);
             // 투사체가 적중했다는 사실만 EffectVisuals에 알림

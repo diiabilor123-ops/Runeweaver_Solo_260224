@@ -9,16 +9,17 @@ public class EnemyHealth : MonoBehaviour, IDamageable
 {
     public bool IsDead { get; private set; }
     private float currentHp;
-    private EnemyData data;
+    
     private EnemyVisuals visuals;
     private NavMeshAgent agent; // 에이전트 참조 추가
+    public EnemyData enemyData;
 
     [Header("Damage UI")]
     [SerializeField] private GameObject damageTextPrefab; // 몬스터용 팝업 프리팹 할당
 
     public void Init(EnemyData data)
     {
-        this.data = data;
+        this.enemyData = data;
         this.currentHp = data.maxHp;
         this.visuals = GetComponent<EnemyVisuals>();
         this.agent = GetComponent<NavMeshAgent>(); // 초기화
@@ -29,36 +30,61 @@ public class EnemyHealth : MonoBehaviour, IDamageable
     /// </summary>
     public void TakeDamage(HitData hitData)
     {
+        
         if (IsDead || hitData.attackerTeam == Team.Enemy) return;
 
         EnemyShield shield = GetComponent<EnemyShield>();
-        float remainingDamage = hitData.damage;
 
-        // 1. 쉴드 처리
+
+        // [중요] 화살에서 이미 계산된 정보를 가져옵니다.
+        // 다시 DamageCalculator를 두드리지 마세요!
+        float finalDamage = hitData.damage;
+        bool finalIsCritical = hitData.isCritical;
+
+        // 1. 쉴드 처리 (쉴드가 있다면 먼저 깎고 남은 데미지를 반환)
         if (shield != null)
         {
-            remainingDamage = shield.AbsorbDamage(hitData.damage);
+            // 쉴드가 데미지를 흡수하는 로직 (기존 hitData.damage 활용)
+            float remainingDamage = shield.AbsorbDamage(finalDamage);
 
             // 쉴드에 막힌 데미지 팝업 (파란색)
             float shieldedAmount = hitData.damage - remainingDamage;
             if (shieldedAmount > 0)
             {
-                DamageResult sResult = DamageCalculator.Calculate(shieldedAmount, hitData.element, hitData.attackerTeam, data);
-                DamagePopup.SpawnPopup(damageTextPrefab, transform.position, sResult.finalDamage, sResult.isCritical, Color.blue);
-
+                // 쉴드 팝업 (파란색) - 여기서는 단순히 연출용으로만 표시
+                DamagePopup.SpawnPopup(damageTextPrefab, transform.position, shieldedAmount, false, Color.blue);
             }
+            finalDamage = remainingDamage;
         }
 
         // 2. 실제 체력 데미지 처리
-        if (remainingDamage > 0)
+        if (finalDamage > 0)
         {
-            DamageResult result = DamageCalculator.Calculate(remainingDamage, hitData.element, hitData.attackerTeam, data);
-            currentHp -= result.finalDamage;
+            // [중요] 이미 화살에서 최종 데미지가 계산되어 왔으므로 비율만 계산합니다.
+            float damageRatio = finalDamage / enemyData.maxHp;
+            currentHp -= finalDamage;
 
-            // 체력 데미지 팝업 (흰색)
-            DamagePopup.SpawnPopup(damageTextPrefab, transform.position, result.finalDamage, result.isCritical, Color.white);
+            // [해결 1] 크리티컬 여부에 따라 색상 결정 (노란색/흰색)
+            Color textColor = finalIsCritical ? Color.yellow : Color.white;
 
-            // 3. 피격 피드백 (넉백 로직 제거됨)
+            // [해결 2] 화살이 보내준 크리티컬 정보(finalIsCritical)를 그대로 사용
+            DamagePopup.SpawnPopup(damageTextPrefab, transform.position, finalDamage, finalIsCritical, textColor);
+
+            // 타격 피드백 결정
+            if (currentHp <= 0 && damageRatio >= 0.95f) // 한 방에 처치 (약 100%)
+            {
+                FeedbackManager.Instance.PlayOneShotFeedback();
+            }
+            else if (damageRatio >= 0.5f) // 최대 체력의 50% 이상
+            {
+                FeedbackManager.Instance.PlayMassiveFeedback();
+            }
+            else if (finalIsCritical) // 크리티컬 (나머지 상황 중)
+            {
+                FeedbackManager.Instance.PlayCritFeedback();
+            }
+
+            // 피격 피드백 (넉백 로직 제거됨)
             PlayHitFeedback(hitData);
         }
 

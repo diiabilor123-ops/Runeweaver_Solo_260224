@@ -12,6 +12,9 @@ namespace Runeweaver.Player
         public bool IsDashing { get; set; }
         public bool IsAttacking { get; set; }
 
+        private float clickThreshold = 0.1f;
+        private float _lastClickTime;
+
         // 기능별 컴포넌트 참조
         private PlayerMovement _movement;
         private PlayerDash _dash;
@@ -54,7 +57,7 @@ namespace Runeweaver.Player
             // [4] 공격 입력
             if (Input.GetMouseButtonDown(0))
             {
-                _combat.TryAttack();
+                HandleAttackInput();
             }
 
             // [5] 행동 제어: 대시 중이 아닐 때만 이동 로직 실행
@@ -62,6 +65,24 @@ namespace Runeweaver.Player
             {
                 // 이제 보정된 finalMoveDir를 전달하여 쿼터뷰에서도 정방향 이동이 가능하게 합니다.
                 _movement.Move(finalMoveDir, IsAttacking);
+            }
+        }
+
+        /// <summary>
+        /// 마우스 하드웨어 오류로 인한 더블 클릭을 방지하며 공격을 시도합니다.
+        /// </summary>
+        private void HandleAttackInput()
+        {
+            // 현재 시간(Time.unscaledTime)과 마지막 클릭 시간의 차이를 비교
+            if (Time.unscaledTime - _lastClickTime > clickThreshold)
+            {
+                _combat.TryAttack();
+                _lastClickTime = Time.unscaledTime;
+            }
+            else
+            {
+                // 채터링(너무 빠른 연속 클릭) 감지 및 차단
+                Debug.Log("<color=yellow>Chataering Blocked!</color>");
             }
         }
 
@@ -79,12 +100,9 @@ namespace Runeweaver.Player
             camForward.y = 0f;
             camRight.y = 0f;
 
-            camForward.Normalize();
-            camRight.Normalize();
-
             // 사용자의 입력값(h, v)에 카메라 방향성을 곱해 새로운 방향 벡터를 생성합니다.
             // W를 누르면(v=1) 카메라가 바라보는 앞쪽으로 가고, D를 누르면(h=1) 카메라의 오른쪽으로 갑니다.
-            return (camForward * v + camRight * h).normalized;
+            return (camForward.normalized * v + camRight.normalized * h).normalized;
         }
     }
 }

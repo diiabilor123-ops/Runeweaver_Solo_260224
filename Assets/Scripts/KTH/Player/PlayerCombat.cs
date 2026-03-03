@@ -55,6 +55,9 @@ namespace Runeweaver.Player
         {
             _controller.IsAttacking = true;
 
+            // [추가] 혹시 남아있을지 모르는 공격 트리거를 강제로 꺼버림 (중복 방지 핵심)
+            _anim.ResetTrigger("Attack");
+
             // 1. 공격 시작 즉시 마우스 방향 바라보기
             InstantLookAtMouse();
 
@@ -68,7 +71,9 @@ namespace Runeweaver.Player
             // 4. 후딜레이 관리
             // 애니메이터에 설정한 AttackSpeed(Multiplier)를 고려하여 대기 시간을 계산합니다.
             float currentAttackSpeed = _anim ? _anim.GetFloat("AttackSpeed") : 1f;
-            yield return new WaitForSeconds(attackPostDelay / currentAttackSpeed);
+            if (currentAttackSpeed <= 0) currentAttackSpeed = 1f; // 0으로 나누기 방지
+
+            yield return new WaitForSecondsRealtime(attackPostDelay / currentAttackSpeed);
 
             _controller.IsAttacking = false;
 
@@ -76,6 +81,7 @@ namespace Runeweaver.Player
             if (_hasBufferedAttack)
             {
                 _hasBufferedAttack = false;
+                yield return null; // 한 프레임 대기
                 TryAttack();
             }
         }
@@ -86,22 +92,30 @@ namespace Runeweaver.Player
         /// </summary>
         public void ShootArrow()
         {
+            // [수정] 발사 직전에도 마우스 위치를 다시 갱신하여 조작감을 높임
+            InstantLookAtMouse();
+
             // 1. 전진 연출
             transform.DOMove(transform.position + transform.forward * stepDistance, 0.1f).SetEase(Ease.OutQuad);
 
             // 2. [원래 코드 복구] 각도 보정 없이 firePoint의 세팅된 로테이션을 그대로 사용
             if (bulletPrefab == null || firePoint == null) return;
 
+            // [핵심 수정] 화살의 발사 회전값을 firePoint.forward 기준으로 잡되, 
+            // 수평(Y=0)을 강제하여 위/아래로 쏘는 현상을 방지합니다.
+            Vector3 shootDir = firePoint.forward;
+            shootDir.y = 0f;
+            shootDir.Normalize();
+
             // 원래 코드 방식: Instantiate(prefab, position, rotation)
-            GameObject go = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
+            GameObject go = Instantiate(bulletPrefab, firePoint.position, Quaternion.LookRotation(shootDir));
 
             if (go.TryGetComponent(out BulletBase bullet))
             {
                 BulletDataSO data = BulletManager.Instance.GetCurrentEquippedData();
                 if (data != null)
                 {
-                    // 원래 코드 방식: firePoint.forward 방향으로 날리기
-                    bullet.Setup(data, firePoint.forward);
+                    bullet.Setup(data, shootDir);
 
                     if (data.shootSound != null && SoundManager.Instance != null)
                         SoundManager.Instance.Play(data.shootSound, firePoint.position);
@@ -115,17 +129,33 @@ namespace Runeweaver.Player
         /// </summary>
         private void InstantLookAtMouse()
         {
+            // 1. 카메라에서 마우스 위치로 레이 생성
             Ray ray = UnityEngine.Camera.main.ScreenPointToRay(Input.mousePosition);
-            // 맵 레이어(예: Ground)만 체크하도록 설정하는 것이 성능상 좋습니다.
-            if (Physics.Raycast(ray, out RaycastHit hit, 100f))
-            {
-                Vector3 targetPoint = hit.point;
-                targetPoint.y = transform.position.y; // 캐릭터가 위아래로 꺾이지 않게 방지
 
-                Vector3 dir = targetPoint - transform.position;
-                if (dir != Vector3.zero)
+            // 2. firePoint의 높이(Y값)를 기준으로 수평 평면 생성
+            // Plane(법선 방향, 평면 위의 한 점)
+            Plane horizontalPlane = new Plane(Vector3.up, new Vector3(0, firePoint.position.y, 0));
+
+            // 3. 레이가 이 수평 평면과 만나는 지점(distance) 계산
+            if (horizontalPlane.Raycast(ray, out float enter))
+            {
+                // 실제 충돌 지점 계산
+                Vector3 hitPoint = ray.GetPoint(enter);
+
+                // 캐릭터 몸체는 Y축으로만 회전 (수평 방향 벡터)
+                Vector3 lookDir = hitPoint - transform.position;
+                lookDir.y = 0;
+
+                if (lookDir != Vector3.zero)
                 {
-                    transform.rotation = Quaternion.LookRotation(dir);
+                    transform.rotation = Quaternion.LookRotation(lookDir);
+                }
+
+                // firePoint는 정확한 hitPoint를 바라보게 함
+                Vector3 fireDir = hitPoint - firePoint.position;
+                if (fireDir != Vector3.zero)
+                {
+                    firePoint.rotation = Quaternion.LookRotation(fireDir.normalized);
                 }
             }
         }
