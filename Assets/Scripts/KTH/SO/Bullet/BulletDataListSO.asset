@@ -15,3 +15,6 @@ MonoBehaviour:
   bulletDatas:
   - {fileID: 11400000, guid: ad56bb04e6613f84c8a2dc2b6ac2f624, type: 2}
   - {fileID: 11400000, guid: 06983704671358242bc0d7d91d63b9d2, type: 2}
+  - {fileID: 11400000, guid: fc6ed09f4d7321f4eb5361e76130067b, type: 2}
+  - {fileID: 11400000, guid: 9ac23704f5b9cc44d9a71e5194e389e5, type: 2}
+  - {fileID: 11400000, guid: db15b8d331de7734882c8040ad76e1b6, type: 2}

@@ -1,16 +1,5 @@
 using UnityEngine;
-
-// 1. 6가지 원소 속성 정의
-public enum ElementType
-{
-    None,
-    Pyro,   // 불
-    Aqua,   // 물/얼음
-    Volt,   // 번개
-    Nature, // 자연/풀
-    Light,  // 빛
-    Dark    // 어둠
-}
+using Runeweaver;
 
 // 2. 몬스터 데이터 규격 (SO)
 [CreateAssetMenu(fileName = "NewEnemyData", menuName = "EnemyDataSO/Data/Enemy Data")]
@@ -18,7 +7,7 @@ public class EnemyData : ScriptableObject
 {
     [Header("기본 정보")]
     public string enemyName;
-    public ElementType mainElement; // 몬스터의 주 속성
+    public MonsterElement mainElement; // [변경] MonsterElement 타입 사용
 
     [Header("전투 능력치")]
     public float maxHp = 100f;

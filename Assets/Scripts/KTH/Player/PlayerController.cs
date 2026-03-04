@@ -73,15 +73,16 @@ namespace Runeweaver.Player
         /// </summary>
         private void HandleAttackInput()
         {
-            // 현재 시간(Time.unscaledTime)과 마지막 클릭 시간의 차이를 비교
             if (Time.unscaledTime - _lastClickTime > clickThreshold)
             {
-                _combat.TryAttack();
+                // [수정] () 안에 공격 슬롯 정보를 넣어줍니다.
+                // 만약 SkillSlotType을 못 찾는다고 나오면 앞에 Runeweaver. 을 붙여주세요.
+                _combat.TryAttack(Runeweaver.SkillSlotType.LeftClick);
+
                 _lastClickTime = Time.unscaledTime;
             }
             else
             {
-                // 채터링(너무 빠른 연속 클릭) 감지 및 차단
                 Debug.Log("<color=yellow>Chataering Blocked!</color>");
             }
         }

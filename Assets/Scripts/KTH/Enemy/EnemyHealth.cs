@@ -1,3 +1,4 @@
+using Runeweaver;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -13,6 +14,9 @@ public class EnemyHealth : MonoBehaviour, IDamageable
     private EnemyVisuals visuals;
     private NavMeshAgent agent; // 에이전트 참조 추가
     public EnemyData enemyData;
+
+    // EnemyHealth.cs 상단 변수 선언부에 추가
+    private int lastHitFrame = -1;
 
     [Header("Damage UI")]
     [SerializeField] private GameObject damageTextPrefab; // 몬스터용 팝업 프리팹 할당
@@ -30,7 +34,9 @@ public class EnemyHealth : MonoBehaviour, IDamageable
     /// </summary>
     public void TakeDamage(HitData hitData)
     {
-        
+        // [추가] 같은 프레임에 이미 데미지를 입었다면 무시
+        if (Time.frameCount == lastHitFrame) return;
+
         if (IsDead || hitData.attackerTeam == Team.Enemy) return;
 
         EnemyShield shield = GetComponent<EnemyShield>();
@@ -111,8 +117,9 @@ public class EnemyHealth : MonoBehaviour, IDamageable
 
 
     // 인터페이스 호환용 (필요시)
-    public void TakeDamage(float amount, ElementType element, Team team)
+    public void TakeDamage(float amount, MonsterElement element, Team team)
     {
+
         HitData defaultHit = new HitData { damage = amount, element = element, attackerTeam = team, attackerPos = transform.position };
         TakeDamage(defaultHit);
     }

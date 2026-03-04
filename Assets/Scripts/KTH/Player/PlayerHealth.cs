@@ -1,3 +1,5 @@
+using Runeweaver;
+using System.Collections.Generic;
 using UnityEngine;
 
 
@@ -26,8 +28,19 @@ public class PlayerHealth : MonoBehaviour, IDamageable // 1. 인터페이스 상속 추�
 
         if (isInvincible) return;
 
-        // [수정] 계산기 사용 (플레이어는 targetData가 없으므로 null 전달)
-        DamageResult result = DamageCalculator.Calculate(hitData.damage, hitData.element, hitData.attackerTeam, null);
+        // [수정] DamageCalculator.Calculate의 인자 타입을 ElementEnemyType에 맞춥니다.
+        // 몬스터가 플레이어를 공격할 때는 hitData.element(ElementEnemyType)를 사용합니다.
+        List<ElementType> monsterElementList = new List<ElementType>();
+        if (hitData.element == MonsterElement.M_Fire) monsterElementList.Add(ElementType.Fire);
+        else if (hitData.element == MonsterElement.M_Ice) monsterElementList.Add(ElementType.Ice);
+        else if (hitData.element == MonsterElement.M_Volt) monsterElementList.Add(ElementType.Volt);
+
+        DamageResult result = DamageCalculator.Calculate(
+            hitData.damage,
+            monsterElementList, // 리스트 형태로 전달
+            hitData.attackerTeam,
+            null
+        );
 
         currentHp -= result.finalDamage;
 
