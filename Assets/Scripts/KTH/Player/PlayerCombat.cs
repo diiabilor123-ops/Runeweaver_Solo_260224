@@ -39,7 +39,12 @@ namespace Runeweaver.Player
                 _currentAttackSlot = slot;
                 StartCoroutine(AttackRoutine());
             }
-            else _hasBufferedAttack = true; // 공격 중이면 선입력 저장
+            else
+            {
+                // [수정] 선입력 시 마지막에 누른 슬롯을 기억하도록 업데이트
+                _currentAttackSlot = slot;
+                _hasBufferedAttack = true;
+            }
         }
 
         /// <summary>
@@ -59,14 +64,22 @@ namespace Runeweaver.Player
         private IEnumerator AttackRoutine()
         {
             _controller.IsAttacking = true;
-            _anim.ResetTrigger("Attack");
+
+            // [중요] 공격 시작 시점의 슬롯을 확정 지어 놓습니다.
+            SkillSlotType attackStartSlot = _currentAttackSlot;
+
+            // [추가] 애니메이션 파라미터 안전성 체크
+            if (_anim != null)
+            {
+                _anim.ResetTrigger("Attack");
+                _anim.SetTrigger("Attack");
+            }
 
             _aimHandler.UpdateAim(); // 1. 공격 시작 시 즉시 조준
-            if (_anim) _anim.SetTrigger("Attack");
 
             // 애니메이션 배속(AttackSpeed)에 따른 대기 시간 계산
             float currentAttackSpeed = _anim ? _anim.GetFloat("AttackSpeed") : 1f;
-            yield return new WaitForSecondsRealtime(attackPostDelay / Mathf.Max(0.1f, currentAttackSpeed));
+            yield return new WaitForSeconds(attackPostDelay / Mathf.Max(0.1f, currentAttackSpeed));
 
             _controller.IsAttacking = false;
 
@@ -74,7 +87,7 @@ namespace Runeweaver.Player
             if (_hasBufferedAttack)
             {
                 _hasBufferedAttack = false;
-                yield return null;
+                // [핵심] 다음 프레임에 바로 공격을 이어가도록 처리
                 TryAttack(_currentAttackSlot);
             }
         }
@@ -96,12 +109,16 @@ namespace Runeweaver.Player
             float currentAS = _anim ? _anim.GetFloat("AttackSpeed") : 1.0f;
             float extraAS = Mathf.Max(0, currentAS - 1.0f);
 
-            // 3. 이제 3개의 인자를 모두 넣어서 호출합니다!
-            _weaponHandler.ExecuteAttack(_currentAttackSlot, isCrit, extraAS);
+            // 3. 발사기 호출
+            if (_weaponHandler != null)
+            {
+                _weaponHandler.ExecuteAttack(_currentAttackSlot, isCrit, extraAS);
+            }
 
-            // 전진 연출 (DOTween)
-            transform.DOMove(transform.position + transform.forward * stepDistance, 0.1f).SetEase(Ease.OutQuad);
-
+            // 4. 전진 연출 (성능을 위해 이전 연출 중복 방지 추가)
+            transform.DOKill(true);
+            transform.DOMove(transform.position + transform.forward * stepDistance, 0.1f)
+                     .SetEase(Ease.OutQuad);
         }
     }
 }

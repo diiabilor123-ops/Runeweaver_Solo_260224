@@ -21,9 +21,9 @@ MonoBehaviour:
   damageMultiplier: 0.25
   manaCost: 0
   mainEffect: {fileID: 11400000, guid: aac89325464567744af5f440b19de4d1, type: 2}
-  hitEffect: {fileID: 0}
+  hitEffect: {fileID: 11400000, guid: 94fc4e5e8fa4419469e13fc2a241acca, type: 2}
   muzzleEffect: {fileID: 0}
   trailPrefab: {fileID: 0}
   shootSound: {fileID: 11400000, guid: ccc7051bbdcdc85408702380b3b7e55b, type: 2}
   flySound: {fileID: 0}
-  hitSound: {fileID: 0}
+  hitSound: {fileID: 11400000, guid: 5307fc3bcd9223f42a5c86dd934cfe34, type: 2}

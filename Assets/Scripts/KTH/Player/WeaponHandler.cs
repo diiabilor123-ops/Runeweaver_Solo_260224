@@ -75,19 +75,33 @@ namespace Runeweaver.Player
         // SpawnProjectile에 원소 리스트를 직접 주입할 수 있게 오버로딩/수정
         private void SpawnProjectile(GameObject prefab, Vector3 direction, SkillSlotType slot, Vector3? customPos = null, List<ElementType> customElements = null, BulletDataSO overrideData = null)
         {
+            if (prefab == null) return;
+
             Vector3 finalPos = customPos ?? firePoint.position;
-            GameObject go = Instantiate(prefab, finalPos, Quaternion.LookRotation(direction));
 
-            if (go.TryGetComponent<BulletBase>(out var bullet))
+            // direction이 zero일 경우를 대비한 방어 로직
+            if (direction.sqrMagnitude < 0.001f) direction = transform.forward;
+            Quaternion finalRot = Quaternion.LookRotation(direction);
+
+            // 1. 풀에서 오브젝트 가져오기
+            GameObject go = PoolManager.Instance.Get(prefab, finalPos, finalRot);
+
+            // [수정 포인트] GetComponent 대신 GetComponentInChildren을 사용하여 더 확실하게 찾습니다.
+            BulletBase bullet = go.GetComponent<BulletBase>();
+            if (bullet == null) bullet = go.GetComponentInChildren<BulletBase>();
+
+            if (bullet != null)
             {
-                // [중요] overrideData가 있으면 그것을 쓰고, 없으면 기존처럼 기본 activeData를 씁니다.
+                // 2. 데이터 준비
                 var bulletData = overrideData ?? BulletManager.Instance.GetCurrentEquippedData();
-
                 var elements = customElements ?? PlayerAugment.Instance.GetSortedElements(slot);
 
-                // Setup 내부에서 visuals.InitializeVisuals()가 호출된다면, 
-                // 바뀐 bulletData를 기반으로 올바른 이펙트가 생성됩니다.
-                bullet.Setup(bulletData, direction, elements, slot);
+                // 3. Setup 호출 (이게 실행되어야 디버그 로그가 뜹니다!)
+                bullet.Setup(bulletData, direction, elements, slot, prefab);
+            }
+            else
+            {
+                Debug.LogError($"[WeaponHandler] {prefab.name} 프리팹에서 BulletBase를 찾을 수 없습니다!");
             }
         }
     }

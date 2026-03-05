@@ -1,114 +1,99 @@
 using Runeweaver;
 using Runeweaver.Player;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using UnityEngine;
 
-
 /// <summary>
-/// 소제목: 투사체 데이터 식별자 (Identity)
-/// 역할: 투사체의 핵심 정보(SO)를 보관하고, 다른 부품들이 이를 참조할 수 있게 합니다.
-/// 특징: 스스로 움직이거나 연출을 수행하지 않는 '순수 데이터 전달자'입니다.
+/// 투사체의 핵심 데이터와 공통 충돌 로직을 담당하는 부모 클래스입니다.
 /// </summary>
 public class BulletBase : MonoBehaviour
 {
+    private GameObject _originPrefab;
+
     [Header("Core Data")]
-    [SerializeField] private BulletDataSO _data; // 인스펙터에서 보임
-    public BulletDataSO Data => _data;           // 외부에서는 읽기만 가능
+    [SerializeField] private BulletDataSO _data;
+    public BulletDataSO Data => _data;
 
     [Header("State")]
-    public Vector3 Direction;     // 발사 시 정해진 이동 방향
-    public bool IsActive;     // 현재 투사체가 활성화 상태인지 확인 (부품들의 동작 스위치)
+    public Vector3 Direction;
+    public bool IsActive;
 
     [Header("Augment Info")]
     public SkillSlotType firedFromSlot;
-
-    // [추가/수정] 이 투사체가 유도 화살일 경우 어떤 원소인지 인스펙터에서 지정
-    // 예: FireHomingPrefab에는 Fire가 설정되어 있어야 함
     public ElementType specificType = ElementType.None;
-
-    // [수정] 타입을 Runeweaver.ElementType으로 명시
     public List<ElementType> AppliedElements { get; private set; } = new List<ElementType>();
-    // [추가] 특정 단계 이상의 효과가 활성화되었는지 체크하는 플래그들
+
     public bool IsExplosive { get; private set; }
     public bool IsHoming { get; private set; }
 
-    /// <summary>
-    /// 외부(Shooter)에서 생성 시 호출하여 데이터를 주입합니다.
-    /// 모든 부품 스크립트는 이 함수가 호출된 이후부터 동작을 시작합니다.
-    /// </summary>
-    public virtual void Setup(BulletDataSO data, Vector3 direction, List<ElementType> elements, SkillSlotType slot)
+    public virtual void Setup(BulletDataSO data, Vector3 direction, List<ElementType> elements, SkillSlotType slot, GameObject originPrefab = null)
     {
+        this._originPrefab = originPrefab;
         this._data = data;
         this.Direction = direction;
-        this.firedFromSlot = slot; // 여기서 슬롯 저장
+        this.firedFromSlot = slot;
 
-        // [수정] 유도 화살(specificType이 지정됨)인 경우, 해당 원소 1개만 가지도록 처리
-        if (specificType != ElementType.None)
+        if (elements == null) elements = new List<ElementType>();
+        this.AppliedElements = new List<ElementType>(elements);
+
+        if (specificType != ElementType.None && !AppliedElements.Contains(specificType))
         {
-            this.AppliedElements = new List<ElementType> { specificType };
-        }
-        else
-        {
-            // 일반 화살일 경우에만 전달받은 모든 원소 리스트를 복사
-            this.AppliedElements = new List<ElementType>(elements);
+            AppliedElements.Add(specificType);
         }
 
-        // [참고] IsExplosive나 IsHoming 플래그는 메인 화살의 강화 연출용으로 유지
+        // 2. [가장 중요] 무조건 IsActive를 true로 설정하여 Update 로직이 돌아가게 함
+        this.IsActive = true;
+
         this.IsExplosive = (AppliedElements.Count >= 6);
-        this.IsHoming = (specificType != ElementType.None); // 유도탄 프리팹이면 true
 
+        // [수정 2] 유도 여부 판정 로직 보완
+        // 단순히 specificType만 체크하면, 일반 유도 화살 프리팹이 작동하지 않을 수 있습니다.
+        // 스크립트 자체가 Bullet_Homing인지 체크하는 것이 더 정확합니다.
+        this.IsHoming = (this is Bullet_Homing) || (specificType != ElementType.None);
+
+
+
+        // [수정 3] 사운드 매니저 싱글톤 체크 강화
+        if (_data != null && _data.shootSound != null && SoundManager.Instance != null)
+        {
+            SoundManager.Instance.Play(_data.shootSound, transform.position);
+        }
+
+        // [핵심] 상태 활성화 (이게 Update를 돌게 합니다)
         this.IsActive = true;
         gameObject.SetActive(true);
 
+        // [핵심] 비주얼 초기화 시점
+        // 반드시 IsActive 설정 후에 호출되어야 이펙트가 부모를 따라 움직입니다.
+        var visuals = GetComponent<EffectVisuals>();
+        if (visuals != null) visuals.InitializeVisuals();
 
-        // --- [추가: 비주얼 부착 로직] ---
-        if (_data.mainEffect != null && _data.mainEffect.prefab != null)
-        {
-            // SO에 등록된 비주얼 프리팹을 생성
-            GameObject vfx = Instantiate(_data.mainEffect.prefab, transform.position, transform.rotation);
-
-            // 생성된 비주얼을 투사체 본체의 자식으로 설정 (이제 유도탄을 따라다님)
-            vfx.transform.SetParent(this.transform);
-
-            // EffectControl이 있다면 초기화
-            if (vfx.TryGetComponent<EffectControl>(out var ctrl))
-            {
-                // [팁] 여기서 원소 색상을 전달하도록 설계했다면 ctrl.Init(_data.mainEffect, color) 호출
-                ctrl.Init(_data.mainEffect);
-            }
-        }
-
-        // [구조적 특징] 여기서 직접 이펙트를 소환하지 않습니다.
-        // 이 스크립트를 참조하는 Visuals 스크립트가 데이터 주입을 감지하여 동작합니다.
-
-        // 비주얼 초기화 호출
-        GetComponent<EffectVisuals>()?.InitializeVisuals();
+        Debug.Log($"[BulletBase] {gameObject.name} 활성화 완료! IsActive: {IsActive}");
     }
 
-    /// <summary>
-    /// [핵심 추가] 적 충돌 시 원소 스택 전달 로직
-    /// </summary>
+    // [공통 충돌 로직]
     protected virtual void OnTriggerEnter(Collider other)
     {
         if (!IsActive) return;
 
+        // 1. 환경 충돌
         if (other.CompareTag("Wall"))
         {
             Deactivate();
             return;
         }
 
-        // 1. EnemyHealth 참조 (기존 IDamageable 시스템 활용)
+        // 2. 적 충돌
         if (other.TryGetComponent<EnemyHealth>(out var enemyHealth))
         {
-            // [비주얼] 적중 이펙트 재생
+            // 자식 클래스에서 중복 히트 등을 체크 (기본값 true)
+            if (!CanHit(enemyHealth)) return;
+
+            // 비주얼 효과
             GetComponent<EffectVisuals>()?.PlayHitVisual(transform.position);
 
-            // SO에 설정된 배율(0.25)을 기본 데미지에 곱합니다.
+            // 데미지 계산
             float finalBaseDamage = Data.damage * Data.damageMultiplier;
-
-            // 데미지 계산기 호출
             DamageResult damageResult = DamageCalculator.Calculate(
                 finalBaseDamage,
                 AppliedElements,
@@ -116,25 +101,23 @@ public class BulletBase : MonoBehaviour
                 enemyHealth.enemyData
             );
 
-            // 3. HitData 구성 (EnemyHealth가 사용하는 규격에 맞춤)
+            // 데이터 보따리 구성
             HitData hitData = new HitData
             {
                 damage = damageResult.finalDamage,
                 isCritical = damageResult.isCritical,
                 attackerTeam = Team.Player,
                 hitPoint = transform.position,
-                attackerPos = PlayerController.Instance.transform.position, // 플레이어 위치
-                                                                            // 원소 상성 계산을 위해 첫 번째 원소 혹은 specificType 전달
+                attackerPos = PlayerController.Instance != null ? PlayerController.Instance.transform.position : transform.position,
                 attackElement = AppliedElements.Count > 0 ? AppliedElements[0] : ElementType.None,
-                // EffectDataSO 구조에 맞게 수정됨
+                element = ConvertToMonsterElement(AppliedElements.Count > 0 ? AppliedElements[0] : ElementType.None),
                 hitEffectPrefab = (Data.hitEffect != null && Data.hitEffect.hitEffectPrefabs.Length > 0)
-                      ? Data.hitEffect.hitEffectPrefabs[0] : null
+                                  ? Data.hitEffect.hitEffectPrefabs[0] : null
             };
 
-            // 4. EnemyHealth에게 전달 (여기서 데미지 팝업, 피드백이 다 처리됨!)
             enemyHealth.TakeDamage(hitData);
 
-            // 5. [원소 스택 처리] 별도의 컴포넌트(EnemyStatus)가 있다면 호출
+            // 원소 스택 적립
             if (other.TryGetComponent<EnemyStatus>(out var enemyStatus))
             {
                 foreach (var element in AppliedElements)
@@ -143,21 +126,40 @@ public class BulletBase : MonoBehaviour
                 }
             }
 
-            // --- [수정: 관통 여부 처리] ---
-            // SO의 isPenetrating이 false면 적중 시 즉시 제거 (유도탄은 여기서 사라짐)
-            if (!Data.isPenetrating)
-            {
-                Deactivate();
-            }
+            // 관통 여부 처리
+            if (!Data.isPenetrating) Deactivate();
         }
     }
 
-    /// <summary>
-    /// 투사체를 비활성화합니다. (오브젝트 풀링 반납용)
-    /// </summary>
+    // 자식(NormalArrow)에서 오버라이드하여 중복 타격 방지 로직을 넣을 수 있음
+    protected virtual bool CanHit(IDamageable target) => true;
+
+    private MonsterElement ConvertToMonsterElement(ElementType type)
+    {
+        switch (type)
+        {
+            case ElementType.Fire: return MonsterElement.M_Fire;
+            case ElementType.Ice: return MonsterElement.M_Ice;
+            case ElementType.Volt: return MonsterElement.M_Volt;
+            default: return MonsterElement.M_None;
+        }
+    }
+
     public void Deactivate()
     {
+        if (!IsActive) return;
         IsActive = false;
-        gameObject.SetActive(false);
+
+        GetComponent<EffectVisuals>()?.ClearVisuals();
+
+        if (_originPrefab != null && PoolManager.Instance != null)
+        {
+            PoolManager.Instance.Release(_originPrefab, gameObject);
+        }
+        else
+        {
+            gameObject.SetActive(false);
+            if (transform.parent == null) Destroy(gameObject, 0.1f);
+        }
     }
 }

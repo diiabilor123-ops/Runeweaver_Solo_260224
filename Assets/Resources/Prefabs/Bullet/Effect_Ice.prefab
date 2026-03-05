@@ -19576,6 +19576,7 @@ Transform:
   - {fileID: 4076170302216098}
   - {fileID: 4993027371536192}
   - {fileID: 5377671273180018178}
+  - {fileID: 8137822821695424041}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
 --- !u!198 &198353865621552650
@@ -59135,3 +59136,65 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
+--- !u!1001 &8710492703766197490
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 4497147126901126}
+    m_Modifications:
+    - target: {fileID: 580604035424629467, guid: a64a37f3dcfb87f44a8c6236b5d49b20, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 580604035424629467, guid: a64a37f3dcfb87f44a8c6236b5d49b20, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 580604035424629467, guid: a64a37f3dcfb87f44a8c6236b5d49b20, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 580604035424629467, guid: a64a37f3dcfb87f44a8c6236b5d49b20, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 580604035424629467, guid: a64a37f3dcfb87f44a8c6236b5d49b20, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 580604035424629467, guid: a64a37f3dcfb87f44a8c6236b5d49b20, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 580604035424629467, guid: a64a37f3dcfb87f44a8c6236b5d49b20, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 580604035424629467, guid: a64a37f3dcfb87f44a8c6236b5d49b20, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 580604035424629467, guid: a64a37f3dcfb87f44a8c6236b5d49b20, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 580604035424629467, guid: a64a37f3dcfb87f44a8c6236b5d49b20, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1864572845640764174, guid: a64a37f3dcfb87f44a8c6236b5d49b20, type: 3}
+      propertyPath: m_Name
+      value: VFX_Trail_Ice
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: a64a37f3dcfb87f44a8c6236b5d49b20, type: 3}
+--- !u!4 &8137822821695424041 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 580604035424629467, guid: a64a37f3dcfb87f44a8c6236b5d49b20, type: 3}
+  m_PrefabInstance: {fileID: 8710492703766197490}
+  m_PrefabAsset: {fileID: 0}

@@ -155,8 +155,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0623ba4fbeb01f34782ce357af4858f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  monsterHitEffectPrefab: {fileID: 107096, guid: cae2db3ed5568564fa1d48b121f30f0a, type: 3}
-  hitSoundSO: {fileID: 0}
+  defaultHitEffectPrefab: {fileID: 0}
 --- !u!114 &-2805623935680393089
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -186,6 +185,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26622ab12c44fdb4b8ff2cd950cb71fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bullet_Homing
+  _data: {fileID: 11400000, guid: fc6ed09f4d7321f4eb5361e76130067b, type: 2}
+  Direction: {x: 0, y: 0, z: 0}
+  IsActive: 0
+  firedFromSlot: 2
+  specificType: 1
   style: 0
   baseHomingSpeed: 8
   baseRotateSpeed: 12

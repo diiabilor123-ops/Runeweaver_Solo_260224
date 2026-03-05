@@ -9,12 +9,9 @@ public class EffectVisuals : MonoBehaviour
     private BulletBase bulletbase;          // 물리/데이터 정보 참조
     private EffectControl currentmainEffect; // 생성된 실제 이펙트 컨트롤러
 
-    [Header("Hit Effects")]
-    public GameObject monsterHitEffectPrefab; // 할당 필요
-
-    // [추가] 사운드 SO 할당
-    [Header("Sounds")]
-    public SoundDataSO hitSoundSO;
+    [Header("Fallbacks")]
+    [Tooltip("데이터에 적중 이펙트가 없을 경우 사용할 기본 프리팹")]
+    public GameObject defaultHitEffectPrefab;
 
     void Awake()
     {
@@ -27,53 +24,121 @@ public class EffectVisuals : MonoBehaviour
     /// </summary>
     public void InitializeVisuals()
     {
-        if (bulletbase.Data == null || bulletbase.Data.mainEffect == null) return;
+        if (bulletbase == null || bulletbase.Data == null) return;
 
-        // 1. 데이터에 등록된 화살 본체 프리팹 생성
-        GameObject effGo = Instantiate(bulletbase.Data.mainEffect.prefab, transform.position, transform.rotation);
+        // 1. [풀링 대응] 이전 발사의 흔적 완벽 정리
+        ClearVisuals();
 
-        // 2. 화살 본체 이펙트가 투사체를 따라다니도록 자식으로 설정
-        effGo.transform.SetParent(this.transform);
-
-        // 3. 컨트롤러 초기화 및 재생
-        currentmainEffect = effGo.GetComponent<EffectControl>();
+        // --- [핵심 추가] 이전 발사의 흔적 정리 ---
+        // 재사용 시 기존에 붙어있던 자식 이펙트가 있다면 정리합니다.
         if (currentmainEffect != null)
         {
-            currentmainEffect.Init(bulletbase.Data.mainEffect);
-            currentmainEffect.Play();
+            // 이펙트 컨트롤러가 풀링을 지원한다면 반납 로직을 넣고,
+            // 아니면 그냥 파괴하거나 비활성화합니다.
+            Destroy(currentmainEffect.gameObject);
+            currentmainEffect = null;
+        }
+
+        // 2. 메인 이펙트(화살 본체) 생성
+        if (bulletbase.Data.mainEffect != null && bulletbase.Data.mainEffect.prefab != null)
+        {
+            GameObject effGo = Instantiate(bulletbase.Data.mainEffect.prefab, transform.position, transform.rotation);
+            effGo.transform.SetParent(this.transform);
+
+            currentmainEffect = effGo.GetComponent<EffectControl>();
+            if (currentmainEffect != null)
+            {
+                currentmainEffect.Init(bulletbase.Data.mainEffect);
+                currentmainEffect.Play();
+            }
+        }
+
+        // 3. 비행 사운드 재생
+        // (발사 사운드는 BulletBase.Setup에서 재생하므로, 여기서는 루프되는 비행음만 담당하는 것이 좋습니다)
+        if (bulletbase.Data.flySound != null && SoundManager.Instance != null)
+        {
+            SoundManager.Instance.Play(bulletbase.Data.flySound, transform.position);
+        }
+    }
+
+    /// <summary>
+    /// [추가] 화살이 풀로 돌아갈 때 호출되어야 할 정리 함수
+    /// </summary>
+    public void ClearVisuals()
+    {
+        // 1. 트레일 초기화 (가장 중요: 잔상 방지)
+        var trails = GetComponentsInChildren<TrailRenderer>();
+        foreach (var trail in trails)
+        {
+            trail.Clear();
+        }
+
+        // 2. 파티클 초기화
+        var particles = GetComponentsInChildren<ParticleSystem>();
+        foreach (var ps in particles)
+        {
+            ps.Clear();
+            ps.Stop();
+        }
+
+        // 3. 생성되었던 메인 모델(EffectControl) 제거
+        if (currentmainEffect != null)
+        {
+            Destroy(currentmainEffect.gameObject);
+            currentmainEffect = null;
+        }
+
+        // 4. 혹시 모를 자식 오브젝트들 정리 (프리팹이 남는 경우 대비)
+        foreach (Transform child in transform)
+        {
+            // TrailRenderer가 붙은 핵심 축(가시적 외형)이 아니라면 삭제
+            if (child.GetComponent<TrailRenderer>() == null)
+            {
+                Destroy(child.gameObject);
+            }
         }
     }
 
     /// <summary>
     /// 적중 시 호출되어 피격 연출을 실행합니다.
     /// </summary>
-    // EffectVisuals.cs 수정본
-    // EffectVisuals.cs 내부의 함수를 하나로 통합하거나 명확히 구분합니다.
     public void PlayHitVisual(Vector3 hitPosition, GameObject specificHitEffect = null)
     {
-        // 1. 사운드 재생 (BulletDataSO에 있는 사운드 우선 활용)
-        if (bulletbase.Data != null && bulletbase.Data.hitSound != null)
+        if (bulletbase == null || bulletbase.Data == null) return;
+
+        // 1. 적중 사운드
+        if (bulletbase.Data.hitSound != null && SoundManager.Instance != null)
         {
-            SoundManager.Instance?.Play(bulletbase.Data.hitSound, hitPosition);
-        }
-        else if (hitSoundSO != null) // 백업 사운드
-        {
-            SoundManager.Instance?.Play(hitSoundSO, hitPosition);
+            SoundManager.Instance.Play(bulletbase.Data.hitSound, hitPosition);
         }
 
-        // 2. 파티클 생성 로직
+        // 2. 적중 이펙트 결정
         GameObject effectToSpawn = null;
 
         if (specificHitEffect != null)
+        {
             effectToSpawn = specificHitEffect;
-        else if (bulletbase.Data.hitEffect != null && bulletbase.Data.hitEffect.hitEffectPrefabs.Length > 0)
-            effectToSpawn = bulletbase.Data.hitEffect.hitEffectPrefabs[0];
-        else
-            effectToSpawn = monsterHitEffectPrefab;
+        }
+        else if (bulletbase.Data.hitEffect != null)
+        {
+            // 구조에 따른 방어적 참조
+            effectToSpawn = bulletbase.Data.hitEffect.prefab;
 
+            // 만약 prefab이 null이고 hitEffectPrefabs 배열이 있다면 첫 번째 사용
+            if (effectToSpawn == null && bulletbase.Data.hitEffect.hitEffectPrefabs != null && bulletbase.Data.hitEffect.hitEffectPrefabs.Length > 0)
+            {
+                effectToSpawn = bulletbase.Data.hitEffect.hitEffectPrefabs[0];
+            }
+        }
+
+        if (effectToSpawn == null) effectToSpawn = defaultHitEffectPrefab;
+
+        // 3. 이펙트 생성 및 자동 파괴(또는 풀링)
         if (effectToSpawn != null)
         {
-            Instantiate(effectToSpawn, hitPosition, Quaternion.identity);
+            GameObject go = Instantiate(effectToSpawn, hitPosition, Quaternion.identity);
+            // 피격 이펙트는 보통 1~2초 뒤에 사라지게 설정 (풀링 매니저가 있다면 PoolManager.Instance.Release 권장)
+            Destroy(go, 2f);
         }
     }
 
