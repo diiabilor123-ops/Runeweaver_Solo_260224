@@ -48,20 +48,33 @@ public class EffectVisuals : MonoBehaviour
     /// 적중 시 호출되어 피격 연출을 실행합니다.
     /// </summary>
     // EffectVisuals.cs 수정본
-    public void PlayHitVisual(Vector3 hitPosition) // Vector3 인자 추가
+    // EffectVisuals.cs 내부의 함수를 하나로 통합하거나 명확히 구분합니다.
+    public void PlayHitVisual(Vector3 hitPosition, GameObject specificHitEffect = null)
     {
-        // 1. 파티클 생성
-        if (monsterHitEffectPrefab != null)
+        // 1. 사운드 재생 (BulletDataSO에 있는 사운드 우선 활용)
+        if (bulletbase.Data != null && bulletbase.Data.hitSound != null)
         {
-            Instantiate(monsterHitEffectPrefab, hitPosition, Quaternion.identity);
+            SoundManager.Instance?.Play(bulletbase.Data.hitSound, hitPosition);
+        }
+        else if (hitSoundSO != null) // 백업 사운드
+        {
+            SoundManager.Instance?.Play(hitSoundSO, hitPosition);
         }
 
-        // 2. [핵심] 사운드 매니저를 통해 소리 재생 (랜덤 피치 포함)
-        if (hitSoundSO != null && SoundManager.Instance != null)
-        {
-            SoundManager.Instance.Play(hitSoundSO, hitPosition);
-        }
+        // 2. 파티클 생성 로직
+        GameObject effectToSpawn = null;
 
+        if (specificHitEffect != null)
+            effectToSpawn = specificHitEffect;
+        else if (bulletbase.Data.hitEffect != null && bulletbase.Data.hitEffect.hitEffectPrefabs.Length > 0)
+            effectToSpawn = bulletbase.Data.hitEffect.hitEffectPrefabs[0];
+        else
+            effectToSpawn = monsterHitEffectPrefab;
+
+        if (effectToSpawn != null)
+        {
+            Instantiate(effectToSpawn, hitPosition, Quaternion.identity);
+        }
     }
 
     // [추가] 몬스터 적중 시 연출 처리

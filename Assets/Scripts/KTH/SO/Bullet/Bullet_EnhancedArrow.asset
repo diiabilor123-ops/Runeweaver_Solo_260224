@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0deafc34c01dcc74c82344f9cd73e009, type: 3}
-  m_Name: Bullet_NormalArrow
+  m_Name: Bullet_EnhancedArrow
   m_EditorClassIdentifier: 
-  bulletID: Bullet_NormalArrow
+  bulletID: Bullet_EnhancedArrow
   bulletPrefab: {fileID: 7462377681604547170, guid: 976267b224770ee4480dcb778ec0d212, type: 3}
   speed: 50
   maxDistance: 15
   isPenetrating: 1
   damage: 10
-  damageMultiplier: 1
+  damageMultiplier: 0.25
   manaCost: 0
-  mainEffect: {fileID: 11400000, guid: 3f77557e2039d1a4aa09a2660cc2127e, type: 2}
+  mainEffect: {fileID: 11400000, guid: aac89325464567744af5f440b19de4d1, type: 2}
   hitEffect: {fileID: 0}
   muzzleEffect: {fileID: 0}
   trailPrefab: {fileID: 0}

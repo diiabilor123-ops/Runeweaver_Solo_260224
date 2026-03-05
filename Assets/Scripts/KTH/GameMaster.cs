@@ -5,50 +5,98 @@ using Runeweaver.Player;
 
 public class GameMaster : MonoBehaviour
 {
-    private WeaponHandler weaponHandler;
+    [Header("--- Test Settings ---")]
+    [Range(0f, 2.0f)] public float gameSpeed = 1.0f;
+
+    private WeaponHandler _weaponHandler;
 
     void Start()
     {
-        // 씬에 있는 WeaponHandler를 찾습니다.
-        weaponHandler = FindFirstObjectByType<WeaponHandler>();
+        _weaponHandler = FindFirstObjectByType<WeaponHandler>();
     }
 
     void Update()
     {
-        // [F1] 모든 유도 화살 증강 스택 2개씩 부여 (발동 조건 충족)
+        Time.timeScale = gameSpeed;
+        HandleHotkeys();
+    }
+
+    private void HandleHotkeys()
+    {
+        // [F1] 모든 원소를 "딱 2스택"으로 맞춤
         if (Input.GetKeyDown(KeyCode.F1))
         {
-            // PlayerAugment의 AddElementStack 메서드 사용
-            PlayerAugment.Instance.AddElementStack(SkillSlotType.LeftClick, ElementType.Fire);
-            PlayerAugment.Instance.AddElementStack(SkillSlotType.LeftClick, ElementType.Fire);
-
-            PlayerAugment.Instance.AddElementStack(SkillSlotType.LeftClick, ElementType.Ice);
-            PlayerAugment.Instance.AddElementStack(SkillSlotType.LeftClick, ElementType.Ice);
-
-            PlayerAugment.Instance.AddElementStack(SkillSlotType.LeftClick, ElementType.Volt);
-            PlayerAugment.Instance.AddElementStack(SkillSlotType.LeftClick, ElementType.Volt);
-
-            // 확률 변수는 AugmentLeftClick 내부 변수명에 맞춰 직접 조정하거나 
-            // 100% 발동을 위해 해당 클래스에서 기본값을 1f로 잠시 수정해두는 것이 좋습니다.
-            PlayerAugment.Instance.leftClick.iceSpawnChance = 1.0f;
-            PlayerAugment.Instance.leftClick.voltBaseChance = 1.0f;
-
-            Debug.Log("<color=green>[GM] 모든 유도 화살 증강 조건(2스택) 충족!</color>");
+            SetElementStacks(ElementType.Fire, 2);
+            SetElementStacks(ElementType.Ice, 2);
+            SetElementStacks(ElementType.Volt, 2);
+            ForceMaxProbability(); // 확률도 100%로 고정
+            Debug.Log("<color=green>[GM] 모든 원소 2스택 세팅 완료!</color>");
         }
 
-        // [F2] 강제 크리티컬 공격 실행 (불 화살 유도 테스트)
+        // [숫자패드 1, 2, 3] 각 원소별로 개별 2스택 보충
+        if (Input.GetKeyDown(KeyCode.Keypad1)) SetElementStacks(ElementType.Fire, 2);
+        if (Input.GetKeyDown(KeyCode.Keypad2)) SetElementStacks(ElementType.Ice, 2);
+        if (Input.GetKeyDown(KeyCode.Keypad3)) SetElementStacks(ElementType.Volt, 2);
+
+        // [F2] 강제 크리티컬 (불 유도탄 테스트용)
         if (Input.GetKeyDown(KeyCode.F2))
         {
-            Debug.Log("<color=red>[GM] 강제 크리티컬 공격!</color>");
-            // SkillSlotType.LeftClick 사용
-            weaponHandler.ExecuteAttack(SkillSlotType.LeftClick, true, 0f);
+            _weaponHandler?.ExecuteAttack(SkillSlotType.LeftClick, true, 0f);
         }
 
-        // [F3] 일반 공격 실행 (얼음/번개 화살 확률 테스트)
-        if (Input.GetKeyDown(KeyCode.F3))
+        // [F9] 모든 몬스터 즉시 처치
+        if (Input.GetKeyDown(KeyCode.F9)) KillAllEnemies();
+    }
+
+    /// <summary>
+    /// 특정 원소의 스택을 원하는 개수(targetCount)만큼 맞춥니다.
+    /// </summary>
+    private void SetElementStacks(ElementType element, int targetCount)
+    {
+        if (PlayerAugment.Instance == null) return;
+
+        // 현재 스택 확인 (PlayerAugment 내부에 스택 리스트가 있으므로 호출)
+        // 주의: 현재 구조상 스택을 '깎는' 기능이 없다면 필요한 만큼만 Add해줍니다.
+        int currentCount = GetCurrentStackCount(element);
+
+        if (currentCount < targetCount)
         {
-            Debug.Log("<color=cyan>[GM] 일반 공격 실행!</color>");
-            weaponHandler.ExecuteAttack(SkillSlotType.LeftClick, false, 0f);
+            int need = targetCount - currentCount;
+            for (int i = 0; i < need; i++)
+            {
+                PlayerAugment.Instance.AddElementStack(SkillSlotType.LeftClick, element);
+            }
+            Debug.Log($"<color=white>[GM] {element} 스택 보충: {currentCount} -> {targetCount}</color>");
         }
+        else
+        {
+            Debug.Log($"<color=yellow>[GM] {element}는 이미 {currentCount}스택 이상입니다.</color>");
+        }
+    }
+
+    // 확률 100% 강제 고정 (테스트 편의성)
+    private void ForceMaxProbability()
+    {
+        var aug = PlayerAugment.Instance.leftClick;
+        aug.iceSpawnChance = 1.0f;
+        aug.voltBaseChance = 1.0f;
+    }
+
+    // 현재 특정 원소가 몇 스택인지 체크하는 보조 메서드
+    private int GetCurrentStackCount(ElementType element)
+    {
+        // [수정] .currentStacks 대신 .GetStack(element)를 직접 호출합니다.
+        if (PlayerAugment.Instance != null && PlayerAugment.Instance.leftClick != null)
+        {
+            return PlayerAugment.Instance.leftClick.GetStack(element);
+        }
+        return 0;
+    }
+
+    private void KillAllEnemies()
+    {
+        EnemyHealth[] enemies = FindObjectsByType<EnemyHealth>(FindObjectsSortMode.None);
+        foreach (var enemy in enemies) enemy.TakeDamage(new HitData { damage = 9999f });
+        Debug.Log("<color=yellow>[GM] 필드 클리어.</color>");
     }
 }

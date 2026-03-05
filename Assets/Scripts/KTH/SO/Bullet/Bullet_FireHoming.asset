@@ -12,17 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0deafc34c01dcc74c82344f9cd73e009, type: 3}
   m_Name: Bullet_FireHoming
   m_EditorClassIdentifier: 
+  bulletID: Bullet_FireHoming
+  bulletPrefab: {fileID: 7462377681604547170, guid: 2542a77482b4a0b4881b0a9cbfa25ac9, type: 3}
   speed: 50
   maxDistance: 15
-  isPenetrating: 1
-  damageMultiplier: 1
+  isPenetrating: 0
+  damage: 10
+  damageMultiplier: 0.25
   manaCost: 0
-  mainEffect: {fileID: 11400000, guid: 3f77557e2039d1a4aa09a2660cc2127e, type: 2}
+  mainEffect: {fileID: 11400000, guid: 8f75119b5c479f94d9a44b23241f7d9b, type: 2}
   hitEffect: {fileID: 0}
   muzzleEffect: {fileID: 0}
   trailPrefab: {fileID: 0}
   shootSound: {fileID: 11400000, guid: ccc7051bbdcdc85408702380b3b7e55b, type: 2}
   flySound: {fileID: 0}
   hitSound: {fileID: 0}
-  hitStopDuration: 0
-  shakeIntensity: 0.1

@@ -1,26 +1,28 @@
 using Runeweaver;
 using Runeweaver.Augment;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class BulletManager : MonoBehaviour
 {
     public static BulletManager Instance;
 
-    [Header("BulletPrefabs")]
-    public GameObject normalArrowPrefab;   // 1~3스택 기본 화살
-    public GameObject enhancedArrowPrefab; // 4스택 이상 강화 화살 (색/이펙트 변경됨)
-    public GameObject homingArrowPrefab;   // 2스택 이상 시 확률적으로 추가되는 유도 화살
-
-    // 원소별 유도 화살 프리팹 (인스펙터에서 할당)
-    public GameObject fireHomingPrefab;
-    public GameObject iceHomingPrefab;
-    public GameObject voltHomingPrefab;
-
     [Header("Data Database List")]
-    [SerializeField] private BulletDataListSO bulletDatabase; // 모든 SO가 담긴 리스트 에셋
+    [SerializeField] private BulletDataListSO bulletDatabase;
 
-    [Header("Current State")]
-    [SerializeField] private BulletDataSO activeData; // 현재 플레이어가 쏘는 화살
+    [Header("Main Arrow Settings")]
+    [SerializeField] private string normalArrowId = "Bullet_NormalArrow";
+    [SerializeField] private string enhancedArrowId = "Bullet_EnhancedArrow";
+
+    [System.Serializable]
+    public struct HomingDataMap // 원소와 파일 ID를 연결하는 구조체
+    {
+        public ElementType type;
+        public string dataId; // 여기에 "Bullet_FireHoming" 등을 적습니다.
+    }
+
+    [Header("Homing Mapping (ID 기반)")]
+    [SerializeField] private List<HomingDataMap> homingMaps;
 
     private void Awake()
     {
@@ -28,30 +30,44 @@ public class BulletManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
-    // 플레이어가 공격할 때 호출하는 함수
-    public BulletDataSO GetCurrentEquippedData() => activeData;
+    // --- [데이터 추출 핵심 로직] ---
 
+    // 1. 특정 ID로 데이터를 가져오는 함수
+    public BulletDataSO GetData(string id) => bulletDatabase.GetBulletData(id);
 
+    // 2. 현재 장착된 기본 화살 데이터 반환
+    public BulletDataSO GetCurrentEquippedData() => GetData(normalArrowId);
 
-    // 메인 화살 프리팹을 결정해서 주는 함수
+    // 3. 유도탄 데이터 가져오기 (인스펙터 설정을 따름)
+    public BulletDataSO GetHomingData(ElementType type)
+    {
+        // 리스트에서 해당 원소 타입에 맞는 설정을 찾습니다.
+        var map = homingMaps.Find(x => x.type == type);
+
+        if (!string.IsNullOrEmpty(map.dataId))
+        {
+            var data = GetData(map.dataId);
+            if (data != null) return data;
+        }
+
+        // 설정이 없으면 기본 화살 반환
+        return GetCurrentEquippedData();
+    }
+
+    // 4. 메인 화살 프리팹 가져오기
     public GameObject GetMainArrowPrefab()
     {
         var augment = PlayerAugment.Instance.leftClick;
-        if (augment.IsAnyElementConverted()) return enhancedArrowPrefab;
-        return normalArrowPrefab;
+        string id = (augment.GetTotalStackCount() >= 4) ? enhancedArrowId : normalArrowId;
+
+        // [수정] mainEffect.prefab 대신 bulletPrefab을 반환
+        return GetData(id)?.bulletPrefab;
     }
 
-    // [에러 해결] 원소타입에 따른 유도 화살 프리팹 반환
+    // 5. 유도 화살 프리팹 가져오기
     public GameObject GetHomingPrefab(ElementType type)
     {
-        switch (type)
-        {
-            case ElementType.Fire: return fireHomingPrefab;
-            case ElementType.Ice: return iceHomingPrefab;
-            case ElementType.Volt: return voltHomingPrefab;
-            default: return homingArrowPrefab;
-        }
+        // [수정] GetHomingData를 통해 가져온 SO의 bulletPrefab을 반환
+        return GetHomingData(type)?.bulletPrefab;
     }
-
-
 }

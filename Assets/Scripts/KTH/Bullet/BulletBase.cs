@@ -1,4 +1,5 @@
 using Runeweaver;
+using Runeweaver.Player;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -42,24 +43,41 @@ public class BulletBase : MonoBehaviour
         this.Direction = direction;
         this.firedFromSlot = slot; // 여기서 슬롯 저장
 
-        // [중요] 리스트를 그대로 참조하지 않고 새 리스트로 복사하여 독립시킵니다.
-        this.AppliedElements = new List<ElementType>(elements);
-
-        // [추가] 만약 이 화살이 특정 원소 유도탄(specificType)이라면 리스트에 추가
-        // 이렇게 해야 적중 시 해당 원소 스택을 쌓을 수 있습니다.
-        if (specificType != ElementType.None && !AppliedElements.Contains(specificType))
+        // [수정] 유도 화살(specificType이 지정됨)인 경우, 해당 원소 1개만 가지도록 처리
+        if (specificType != ElementType.None)
         {
-            AppliedElements.Add(specificType);
+            this.AppliedElements = new List<ElementType> { specificType };
+        }
+        else
+        {
+            // 일반 화살일 경우에만 전달받은 모든 원소 리스트를 복사
+            this.AppliedElements = new List<ElementType>(elements);
         }
 
-        // 원소 개수에 따른 특수 효과 플래그 설정
+        // [참고] IsExplosive나 IsHoming 플래그는 메인 화살의 강화 연출용으로 유지
         this.IsExplosive = (AppliedElements.Count >= 6);
-        this.IsHoming = (AppliedElements.Count >= 2); // 예: 2단계 유도
+        this.IsHoming = (specificType != ElementType.None); // 유도탄 프리팹이면 true
 
         this.IsActive = true;
         gameObject.SetActive(true);
 
 
+        // --- [추가: 비주얼 부착 로직] ---
+        if (_data.mainEffect != null && _data.mainEffect.prefab != null)
+        {
+            // SO에 등록된 비주얼 프리팹을 생성
+            GameObject vfx = Instantiate(_data.mainEffect.prefab, transform.position, transform.rotation);
+
+            // 생성된 비주얼을 투사체 본체의 자식으로 설정 (이제 유도탄을 따라다님)
+            vfx.transform.SetParent(this.transform);
+
+            // EffectControl이 있다면 초기화
+            if (vfx.TryGetComponent<EffectControl>(out var ctrl))
+            {
+                // [팁] 여기서 원소 색상을 전달하도록 설계했다면 ctrl.Init(_data.mainEffect, color) 호출
+                ctrl.Init(_data.mainEffect);
+            }
+        }
 
         // [구조적 특징] 여기서 직접 이펙트를 소환하지 않습니다.
         // 이 스크립트를 참조하는 Visuals 스크립트가 데이터 주입을 감지하여 동작합니다.
@@ -75,21 +93,62 @@ public class BulletBase : MonoBehaviour
     {
         if (!IsActive) return;
 
-        // 1. 적의 상태 관리 스크립트 확인 (EnemyStatus는 새로 만드셔야 합니다)
-        if (other.TryGetComponent<EnemyStatus>(out var enemyStatus))
+        if (other.CompareTag("Wall"))
         {
-            // 2. 이 화살이 가진 모든 원소 명찰을 적에게 전달하여 스택을 쌓음
-            foreach (var element in AppliedElements)
+            Deactivate();
+            return;
+        }
+
+        // 1. EnemyHealth 참조 (기존 IDamageable 시스템 활용)
+        if (other.TryGetComponent<EnemyHealth>(out var enemyHealth))
+        {
+            // [비주얼] 적중 이펙트 재생
+            GetComponent<EffectVisuals>()?.PlayHitVisual(transform.position);
+
+            // SO에 설정된 배율(0.25)을 기본 데미지에 곱합니다.
+            float finalBaseDamage = Data.damage * Data.damageMultiplier;
+
+            // 데미지 계산기 호출
+            DamageResult damageResult = DamageCalculator.Calculate(
+                finalBaseDamage,
+                AppliedElements,
+                Team.Player,
+                enemyHealth.enemyData
+            );
+
+            // 3. HitData 구성 (EnemyHealth가 사용하는 규격에 맞춤)
+            HitData hitData = new HitData
             {
-                // 적에게 해당 원소 1스택 추가 (내부적으로 10스택 시 폭발)
-                enemyStatus.AddElementStack(element, 1);
+                damage = damageResult.finalDamage,
+                isCritical = damageResult.isCritical,
+                attackerTeam = Team.Player,
+                hitPoint = transform.position,
+                attackerPos = PlayerController.Instance.transform.position, // 플레이어 위치
+                                                                            // 원소 상성 계산을 위해 첫 번째 원소 혹은 specificType 전달
+                attackElement = AppliedElements.Count > 0 ? AppliedElements[0] : ElementType.None,
+                // EffectDataSO 구조에 맞게 수정됨
+                hitEffectPrefab = (Data.hitEffect != null && Data.hitEffect.hitEffectPrefabs.Length > 0)
+                      ? Data.hitEffect.hitEffectPrefabs[0] : null
+            };
+
+            // 4. EnemyHealth에게 전달 (여기서 데미지 팝업, 피드백이 다 처리됨!)
+            enemyHealth.TakeDamage(hitData);
+
+            // 5. [원소 스택 처리] 별도의 컴포넌트(EnemyStatus)가 있다면 호출
+            if (other.TryGetComponent<EnemyStatus>(out var enemyStatus))
+            {
+                foreach (var element in AppliedElements)
+                {
+                    enemyStatus.AddElementStack(element, 1);
+                }
             }
 
-            // 3. 데미지 처리 (필요 시 BulletDataSO의 데미지 적용)
-            // enemyStatus.TakeDamage(_data.damage);
-
-            // 4. 투사체 소멸 (오브젝트 풀링 반납)
-            Deactivate();
+            // --- [수정: 관통 여부 처리] ---
+            // SO의 isPenetrating이 false면 적중 시 즉시 제거 (유도탄은 여기서 사라짐)
+            if (!Data.isPenetrating)
+            {
+                Deactivate();
+            }
         }
     }
 

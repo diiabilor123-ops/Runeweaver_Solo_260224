@@ -9,6 +9,11 @@ public class BulletDataListSO : ScriptableObject
 
     public BulletDataSO GetBulletData(string id)
     {
-        return bulletDatas.Find(x => x.name == id);
+        var data = bulletDatas.Find(x => x.bulletID == id);
+        if (data == null)
+        {
+            Debug.LogError($"[BulletDataListSO] ID가 '{id}'인 투사체 데이터를 찾을 수 없습니다! 리스트를 확인하세요.");
+        }
+        return data;
     }
 }

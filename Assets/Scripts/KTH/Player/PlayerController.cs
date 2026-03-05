@@ -8,6 +8,10 @@ namespace Runeweaver.Player
     /// 대시 및 공격 입력을 조율합니다.
     public class PlayerController : MonoBehaviour
     {
+        // --- [핵심 추가: 싱글톤] ---
+        // BulletBase 등 다른 스크립트에서 PlayerController.Instance로 접근할 수 있게 합니다.
+        public static PlayerController Instance { get; private set; }
+
         // 실시간 상태 확인용 프로퍼티 (다른 클래스에서 읽기 가능)
         public bool IsDashing { get; set; }
         public bool IsAttacking { get; set; }
@@ -25,6 +29,18 @@ namespace Runeweaver.Player
 
         private void Awake()
         {
+            // --- [싱글톤 초기화] ---
+            if (Instance == null)
+            {
+                Instance = this;
+            }
+            else
+            {
+                Debug.LogWarning("씬에 PlayerController가 두 개 이상 존재합니다! 하나를 파괴합니다.");
+                Destroy(gameObject);
+                return;
+            }
+
             // 각 기능 스크립트들을 미리 가져와서 연결해둡니다.
             _movement = GetComponent<PlayerMovement>();
             _dash = GetComponent<PlayerDash>();

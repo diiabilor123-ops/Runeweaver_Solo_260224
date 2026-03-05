@@ -53,7 +53,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7462377681604547170}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -155,7 +155,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0623ba4fbeb01f34782ce357af4858f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  monsterHitEffectPrefab: {fileID: 0}
+  monsterHitEffectPrefab: {fileID: 107096, guid: cae2db3ed5568564fa1d48b121f30f0a, type: 3}
   hitSoundSO: {fileID: 0}
 --- !u!114 &-2805623935680393089
 MonoBehaviour:
@@ -187,5 +187,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bullet_Homing
   style: 0
+  baseHomingSpeed: 8
+  baseRotateSpeed: 12
   detectRadius: 15
-  rotateSpeed: 8
+  maxLifeTime: 5
+  homingStartDelay: 1
+  maxHomingAngle: 110
+  groundOffset: 0.5

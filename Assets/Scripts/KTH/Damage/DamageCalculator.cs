@@ -11,6 +11,14 @@ public struct DamageResult
 
 public static class DamageCalculator
 {
+    public static DamageResult Calculate(float baseAmount, ElementType singleElement, Team attackerTeam, EnemyData targetData = null)
+    {
+        List<ElementType> tempElements = new List<ElementType>();
+        if (singleElement != ElementType.None) tempElements.Add(singleElement);
+
+        return Calculate(baseAmount, tempElements, attackerTeam, targetData);
+    }
+
     /// <summary>
     /// [수정] attackElement를 ElementEnemyType으로 받아 상성 계산을 수행하고,
     /// 플레이어의 경우 PlayerAugment의 실시간 스탯을 반영합니다.
@@ -83,6 +91,8 @@ public static class DamageCalculator
                 // 여러 원소가 섞여있을 경우 가장 유리한 상성 적용 (또는 평균값, 기획에 따라 조절)
                 elementalMultiplier = Mathf.Max(elementalMultiplier, currentTypeMultiplier);
             }
+
+
         }
 
         // 4. [신규] 6스택 패시브 데미지 보너스

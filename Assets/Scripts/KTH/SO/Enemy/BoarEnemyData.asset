@@ -14,12 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   enemyName: Boar
   mainElement: 0
-  maxHp: 100
+  maxHp: 500
   moveSpeed: 3.5
-  damage: 10
+  attackDamage: 10
   detectionRange: 10
   attackRange: 2
+  chargeDistance: 8
   attackCooldown: 2
   attackWarningTime: 0.5
-  hitEffectPrefab: {fileID: 0}
+  knockbackForce: 5
+  stunDuration: 1
+  playerHitEffect: {fileID: 0}
   deathEffectPrefab: {fileID: 0}

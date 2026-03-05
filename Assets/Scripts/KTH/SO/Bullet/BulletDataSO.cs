@@ -3,12 +3,20 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "BulletData", menuName = "BulletDataSO/Data/Bullet")]
 public class BulletDataSO : ScriptableObject
 {
+    [Header("Identity")]
+    public string bulletID; // 여기에 "Bullet_FireHoming" 등을 직접 입력합니다.
+
+    [Header("Prefab Settings")]
+    // [중요] 여기에 '진짜' 충돌체가 붙은 화살 프리팹을 넣습니다.
+    public GameObject bulletPrefab;
+
     [Header("Movement")]
     public float speed = 20f;
     public float maxDistance = 8f; // 기획안의 8m를 여기서 조절
     public bool isPenetrating = true; // 기본 공격은 모든 적 관통
 
     [Header("Combat")]
+    public float damage = 10f;
     public float damageMultiplier = 1f; // 기본 데미지에 곱해질 비율 (다발 화살은 0.25)
     public int manaCost = 0;           // 마나 소모량 (다발 화살은 1)
 

@@ -36,6 +36,7 @@ public class Bullet_NormalArrow : MonoBehaviour
         // 전투 충돌
         if (other.TryGetComponent(out EnemyHealth target))
         {
+
             if (hitTargets.Contains(target)) return;
             hitTargets.Add(target);
 

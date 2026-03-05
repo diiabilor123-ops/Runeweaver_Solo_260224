@@ -1,144 +1,283 @@
 using UnityEngine;
 using Runeweaver;
 
+/// <summary>
+/// ì—­í• : ì›ì†Œë³„ ê³ ìœ  ê¶¤ì (ì˜¤ë¥¸ìª½/ì™¼ìª½ í¼ì§, ë¨¸ë¦¬ ìœ„ ì¥ì „) í›„ ì ì„ ì¶”ì í•˜ëŠ” ì‹œìŠ¤í…œ
+/// íŠ¹ì§•: 
+/// 1. Fire: ì˜¤ë¥¸ìª½ íŒ” ìƒì„± -> í¬ê²Œ íœ˜ì–´ ë“¤ì–´ì˜¤ëŠ” ê¶¤ì 
+/// 2. Volt: ì™¼ìª½ íŒ” ìƒì„± -> ë‚ ì¹´ë¡­ê²Œ íŒŒê³ ë“œëŠ” ê¶¤ì 
+/// 3. Ice: ë¨¸ë¦¬ ìœ„ ìƒì„± -> ë’¤ë¡œ í›„í‡´í•˜ë©° ì¥ì „ ì—°ì¶œ í›„ ì§ê²©
+/// </summary>
 public class Bullet_Homing : MonoBehaviour
 {
     public enum HomingStyle { Fire, Ice, Volt }
     public HomingStyle style;
-    public float detectRadius = 20f;
-    public float rotateSpeed = 8f;
+
+    [Header("Basic Movement")]
+    public float baseHomingSpeed = 10f;    // ì´ë™ ì†ë„
+    public float baseRotateSpeed = 14f;    // íšŒì „(ì„ íšŒ) ê°•ë„
+    public float detectRadius = 25f;       // ì  ê°ì§€ ë²”ìœ„
+    public float maxLifeTime = 5f;         // ìµœëŒ€ ìˆ˜ëª…
+
+    [Header("Trajectory Settings")]
+    public float homingStartDelay = 1f;  // [í•µì‹¬] ì´ ì‹œê°„ ë™ì•ˆì€ ê¶¤ì ì„ ê·¸ë¦¬ë©° ë°–ìœ¼ë¡œ í¼ì§
+    public float maxHomingAngle = 110f;    // ìœ ë„ ê°€ëŠ¥í•œ ìµœëŒ€ ê°ë„ (ë“± ë’¤ ë°©ì§€)
+    public float groundOffset = 0.5f;      // [ì§€ë©´ ë°•í˜ ë°©ì§€] ìµœì†Œ ë†’ì´ ìœ ì§€
 
     private BulletBase bulletBase;
+    private TrailRenderer trail;
     private Transform target;
-    private float timer = 0f;
-    private Vector3 startPosition; // »ç°Å¸® Ã¼Å©¿ë
-    private Vector3 randomCurveAxis; // ºÒÈ­»ì¿ë ·£´ı ±ËÀû Ãà
+    private EnemyHealth targetHealth;
 
-    void Awake() => bulletBase = GetComponent<BulletBase>();
+    private float lifeTimer = 0f;
+    private Vector3 initialDirection;      // ë°œì‚¬ ì‹œ ì •ë©´
+    private Vector3 sideOffsetDir;         // ë°œì‚¬ ì‹œ ìš°ì¸¡
+
+    void Awake()
+    {
+        bulletBase = GetComponent<BulletBase>();
+        trail = GetComponentInChildren<TrailRenderer>();
+    }
 
     void OnEnable()
     {
-        timer = 0f;
-        startPosition = transform.position; // ½ÃÀÛ À§Ä¡ ±â·Ï
-        target = FindNearestMonster();
-        // ºÒÈ­»ìÀÌ ¸Å¹ø ´Ù¸¥ ¹æÇâÀ¸·Î ÈÖµµ·Ï ·£´ı Ãà ¼³Á¤
-        randomCurveAxis = new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0).normalized;
+        // ì´ˆê¸°í™”
+        lifeTimer = 0f;
+        target = null;
+        targetHealth = null;
+        initialDirection = transform.forward;
+        sideOffsetDir = transform.right;
 
-        // Áß¿ä: ¸¸¾à BulletMovement°¡ ºÙ¾îÀÖ´Ù¸é ·ÎÁ÷ Ãæµ¹À» ¸·±â À§ÇØ ²ü´Ï´Ù.
-        if (TryGetComponent<BulletMovement>(out var move)) move.enabled = false;
+        if (trail != null)
+        {
+            trail.Clear();
+            trail.emitting = true;
+        }
+
+        SetupInitialPosition();
+        FindNewTarget();
+    }
+
+    /// <summary>
+    /// ìºë¦­í„° ë°œì‚¬ í¬ì¸íŠ¸ ê¸°ì¤€ ì´ˆê¸° ìœ„ì¹˜ ì„¸íŒ…
+    /// </summary>
+    private void SetupInitialPosition()
+    {
+        // ìƒì„± ìœ„ì¹˜ì— ì¤„ ëœë¤ ê°’ (0.1f ~ 0.3f ì •ë„ì˜ ë¯¸ì„¸í•œ ì°¨ì´)
+        float randomSide = Random.Range(-0.2f, 0.2f);
+        float randomUp = Random.Range(-0.1f, 0.2f);
+        float randomForward = Random.Range(-0.2f, 0.2f);
+
+        switch (style)
+        {
+            case HomingStyle.Fire:
+                // ì˜¤ë¥¸ìª½ íŒ” ê·¼ì²˜ + ëœë¤ì„±
+                transform.position += (sideOffsetDir * (1.2f + randomSide)) + (Vector3.up * (0.2f + randomUp));
+                break;
+
+            case HomingStyle.Ice:
+                // ë¨¸ë¦¬ ìœ„ ì¤‘ì•™ (ìš”ì²­í•˜ì‹  ëŒ€ë¡œ Vector3.up ë³´ì • ì œê±° ë²„ì „)
+                // ëŒ€ì‹  ì•½ê°„ì˜ ì•ë’¤/ì¢Œìš° ëœë¤ê°’ë§Œ ì£¼ì–´ ë­‰ì¹˜ì§€ ì•Šê²Œ í•¨
+                transform.position += (sideOffsetDir * randomSide) + (initialDirection * (-0.3f + randomForward));
+                break;
+
+            case HomingStyle.Volt:
+                // ì™¼ìª½ íŒ” ê·¼ì²˜ + ëœë¤ì„±
+                transform.position += (sideOffsetDir * (-1.2f + randomSide)) + (Vector3.up * (0.2f + randomUp));
+                break;
+        }
     }
 
     void Update()
     {
         if (bulletBase == null || !bulletBase.IsActive) return;
-        timer += Time.deltaTime;
 
-        // 1. »ç°Å¸® Ã¼Å© (BulletMovementÀÇ ¿ªÇÒÀ» ´ë½ÅÇÔ)
-        float distance = Vector3.Distance(startPosition, transform.position);
-        if (distance >= bulletBase.Data.maxDistance)
-        {
-            bulletBase.Deactivate();
-            return;
-        }
+        lifeTimer += Time.deltaTime;
+        if (lifeTimer > maxLifeTime) { bulletBase.Deactivate(); return; }
 
-        // 2. Å¸°Ù À¯È¿¼º Ã¼Å©
-        if (target != null && target.TryGetComponent<EnemyHealth>(out var h) && h.IsDead)
-            target = null;
+        ValidateTarget();
+        PreventGroundCollision(); // ì§€ë©´ ë°•í˜ ë°©ì§€ ë¡œì§ ìƒì‹œ ê°€ë™
 
+        // ìŠ¤íƒ€ì¼ë³„ ë¹„í–‰ ì²˜ë¦¬
         switch (style)
         {
-            case HomingStyle.Fire: MoveFire(); break;
-            case HomingStyle.Ice: MoveIce(); break;
-            case HomingStyle.Volt: MoveVolt(); break;
+            case HomingStyle.Fire: UpdateFireTrajectory(); break;
+            case HomingStyle.Ice: UpdateIceTrajectory(); break;
+            case HomingStyle.Volt: UpdateVoltTrajectory(); break;
         }
     }
 
-    private void MoveFire()
+    // ---------------------------------------------------------
+    // [ì›ì†Œë³„ ê¶¤ì  ë¡œì§]
+    // ---------------------------------------------------------
+
+    private void UpdateFireTrajectory()
     {
-        // [Æ¯»ö: °î¼± ±ËÀû] 0.6ÃÊ µ¿¾ÈÀº Å©°Ô ÈÖ¾îÁö¸ç ºñÇà (Å¸°Ù À¯¹« »ó°ü¾øÀÌ ¿¬Ãâ)
-        if (timer < 0.6f)
+        if (lifeTimer < homingStartDelay)
         {
-            // ³ª¼±ÇüÀ¸·Î ÈÖ¾îÁö´Â ¿òÁ÷ÀÓ
-            transform.Rotate(randomCurveAxis, 150f * Time.deltaTime);
-            transform.position += transform.forward * bulletBase.Data.speed * 0.8f * Time.deltaTime;
-        }
-        else if (target != null)
-        {
-            RotateAndMove(rotateSpeed); // ÀÌÈÄ À¯µµ
-        }
-        else
-        {
-            // Å¸°Ù ¾øÀ¸¸é ±×´ë·Î ÈÖ¾îÁ®¼­ ¹ÛÀ¸·Î ³ª°¨
-            transform.Rotate(randomCurveAxis, 50f * Time.deltaTime);
-            transform.position += transform.forward * bulletBase.Data.speed * Time.deltaTime;
-        }
-    }
+            // [í™”ì—¼: í›„ë°© ì„ íšŒ ê¶¤ì ] 
+            // 1. ì´ˆê¸°ì—ëŠ” ë’¤ìª½(-initialDirection)ê³¼ ì˜¤ë¥¸ìª½(sideOffset)ìœ¼ë¡œ ê°•í•˜ê²Œ í˜ì„ ì¤ë‹ˆë‹¤.
+            // 2. ì‹œê°„ì´ ì§€ë‚ ìˆ˜ë¡(progress) ì„œì„œíˆ ì•ìª½(initialDirection)ìœ¼ë¡œ í˜ì„ ì „í™˜í•©ë‹ˆë‹¤.
 
-    private void MoveIce()
-    {
-        // [Æ¯»ö: ¸Ó¸® À§ Á¤Áö ÈÄ ¹ß»ç] 0.4ÃÊ°£ Á¦ÀÚ¸® È¸ÀüÇÏ¸ç ¿¡³ÊÁö¸¦ ¸ğÀ¸´Â ¿¬Ãâ
-        if (timer < 0.4f)
-        {
-            transform.Rotate(Vector3.up, 1000f * Time.deltaTime);
-        }
-        else
-        {
-            if (target != null) RotateAndMove(rotateSpeed * 1.5f); // ºü¸¥ À¯µµ
-            else transform.position += transform.forward * bulletBase.Data.speed * 1.2f * Time.deltaTime; // Á÷¼±
-        }
-    }
+            float progress = lifeTimer / homingStartDelay;
 
-    private void MoveVolt()
-    {
-        // [Æ¯»ö: Áö±×Àç±× ÀüÁø] 0.3ÃÊ°£ ºü¸£°Ô Á÷¼±À¸·Î »¸¾î³ª°¡´Ù ±ŞÈ¸Àü
-        if (timer < 0.3f)
-        {
-            // »ìÂ¦ Áö±×Àç±× ´À³¦ Ãß°¡
-            float shake = Mathf.Sin(Time.time * 20f) * 0.1f;
-            transform.position += (transform.forward + transform.right * shake) * bulletBase.Data.speed * Time.deltaTime;
-        }
-        else if (target != null)
-        {
-            RotateAndMove(rotateSpeed * 2.5f); // ¹ø°³Ã³·³ ¸Å¿ì ºü¸¥ À¯µµ
-        }
-        else
-        {
-            transform.position += transform.forward * bulletBase.Data.speed * Time.deltaTime;
-        }
-    }
+            // ë’¤ë¡œ ë¹ ì¡Œë‹¤ê°€ ì•ìœ¼ë¡œ ëŒì•„ì˜¤ëŠ” í˜ (Lerpë¡œ ë¶€ë“œëŸ½ê²Œ ì „í™˜)
+            Vector3 forwardBackward = Vector3.Lerp(-initialDirection * 1.2f, initialDirection, progress);
+            // ì˜¤ë¥¸ìª½ìœ¼ë¡œ í¬ê²Œ ë„ëŠ” í˜
+            Vector3 sideArc = sideOffsetDir * 3.0f;
+            // ìœ„ë¡œ ì‚´ì§ ë„ì›€
+            Vector3 upArc = Vector3.up * 0.5f;
 
-    private void RotateAndMove(float s)
-    {
-        Vector3 dir = (target.position - transform.position).normalized;
-        Quaternion targetRot = Quaternion.LookRotation(dir);
-        transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, s * Time.deltaTime);
-        transform.position += transform.forward * bulletBase.Data.speed * Time.deltaTime;
-    }
+            Vector3 moveDir = (forwardBackward + sideArc + upArc).normalized;
+            float speedBoost = Mathf.Lerp(0.8f, 1.3f, progress);
 
-    private Transform FindNearestMonster()
-    {
-        // [¿¡·¯ ÇØ°á] Monster ÅÂ±×¸¦ °¡Áø °ÍµéÀ» Ã£À½
-        GameObject[] monsters = GameObject.FindGameObjectsWithTag("Monster");
-        if (monsters == null || monsters.Length == 0) return null;
+            transform.position += moveDir * baseHomingSpeed * speedBoost * Time.deltaTime;
 
-        float closestDist = detectRadius;
-        Transform closest = null;
-
-        foreach (var m in monsters)
-        {
-            // [¿¡·¯ ÇØ°á] GetComponent °á°ú°¡ nullÀÎÁö È®ÀÎÇÏ´Â ·ÎÁ÷ Ãß°¡
-            if (m.TryGetComponent<EnemyHealth>(out var health))
+            if (moveDir != Vector3.zero)
             {
-                if (health.IsDead) continue;
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(moveDir), Time.deltaTime * 10f);
+            }
+        }
+        else
+        {
+            // [ìˆ˜ì •] ì ì´ ì—†ì„ ë•Œ ì •ë©´ì„ í–¥í•˜ë„ë¡ ë³´ì •
+            if (target != null)
+            {
+                RotateTowards(GetTargetCenter(), 1.0f);
+            }
+            else
+            {
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(initialDirection), Time.deltaTime * 3f);
+            }
+            MoveForward(baseHomingSpeed * 1.4f);
+        }
+    }
 
-                float d = Vector3.Distance(transform.position, m.transform.position);
-                if (d < closestDist)
+    private void UpdateVoltTrajectory()
+    {
+        // ë²ˆê°œ ìœ ë„ ì‹œì‘ ì‹œì ì„ ì•½ê°„ ëŠ¦ì¶”ê±°ë‚˜ ë¶€ë“œëŸ½ê²Œ ì—°ê²°
+        float voltDelay = homingStartDelay * 0.5f;
+
+        if (lifeTimer < voltDelay)
+        {
+            // [ë²ˆê°œ: ì •ë©´ ì§€í–¥ì„± ì¶”ê°€] initialDirection ë¹„ì¤‘ì„ ë†’ì—¬ 90ë„ êº¾ì„ì„ ë°©ì§€
+            // ì™¼ìª½ ëŒ€ê°ì„  ì•ìœ¼ë¡œ ìì—°ìŠ¤ëŸ½ê²Œ ì „ì§„
+            Vector3 arcVec = (initialDirection * 1.2f - sideOffsetDir * 0.8f + Vector3.up * 0.3f).normalized;
+
+            transform.position += arcVec * baseHomingSpeed * 1.2f * Time.deltaTime;
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(arcVec), Time.deltaTime * 10f);
+        }
+        else
+        {
+            // ì ì´ ì—†ì„ ë•Œë„ 90ë„ë¡œ êº¾ì—¬ìˆì§€ ì•Šë„ë¡ ì •ë©´ì„ ìœ ì§€í•˜ê²Œ í•¨
+            if (target != null)
+            {
+                RotateTowards(GetTargetCenter(), 2.0f);
+            }
+            else
+            {
+                // íƒ€ê²Ÿì´ ì—†ìœ¼ë©´ ë‹¤ì‹œ ì •ë©´ ë°©í–¥ìœ¼ë¡œ ì„œì„œíˆ íšŒì „ ë³µê·€
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(initialDirection), Time.deltaTime * 2f);
+            }
+            MoveForward(baseHomingSpeed * 1.7f);
+        }
+    }
+
+    private void UpdateIceTrajectory()
+    {
+        if (lifeTimer < 0.7f)
+        {
+            // [ì¥ì „] ë’¤ë¡œ ì‚´ì§ ë°€ë¦¬ë©° íšŒì „ (íŠ¸ë ˆì¼ ì ì‹œ ë”)
+            transform.position -= initialDirection * 1.5f * Time.deltaTime;
+            transform.Rotate(Vector3.forward, 500f * Time.deltaTime);
+            if (trail != null) trail.emitting = false;
+        }
+        else
+        {
+            // [ë°œì‚¬] ì§ì„  ìœ„ì£¼ë¡œ ë¹ ë¥´ê²Œ íƒ€ê²©
+            if (trail != null) trail.emitting = true;
+            if (target != null) RotateTowards(target.position, 1.2f);
+            MoveForward(baseHomingSpeed * 1.5f);
+        }
+    }
+
+    // ---------------------------------------------------------
+    // [ê³µìš© ìœ ë„ ë¡œì§]
+    // ---------------------------------------------------------
+
+    private void RotateTowards(Vector3 targetPos, float speedMultiplier)
+    {
+        Vector3 dir = (targetPos - transform.position).normalized;
+
+        // ë°œì‚¬ ì‹œì  ì •ë©´ ê¸°ì¤€ ê°ë„ ì œí•œ (Uí„´ ë°©ì§€)
+        if (Vector3.Angle(initialDirection, dir) > maxHomingAngle) return;
+
+        Quaternion targetRot = Quaternion.LookRotation(dir);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, baseRotateSpeed * speedMultiplier * Time.deltaTime);
+    }
+
+    private void PreventGroundCollision()
+    {
+        // ë°”ë‹¥ì—ì„œ ì¼ì • ë†’ì´ ì´í•˜ë¡œ ë‚´ë ¤ê°€ë ¤ í•˜ë©´ ê°•ì œë¡œ ìœ„ë¥¼ ë³´ê²Œ í•¨
+        if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, groundOffset))
+        {
+            // 1. íƒœê·¸ê°€ Groundê±°ë‚˜ 
+            // 2. í˜¹ì€ ë ˆì´ì–´ê°€ Environment(í™˜ê²½)ì¸ ê²½ìš°ì—ë§Œ ë°˜ì‘ (íƒœê·¸ ì—ëŸ¬ ë°©ì§€ìš© ì²´í¬ ì¶”ê°€ ê°€ëŠ¥)
+            if (hit.collider.CompareTag("Ground"))
+            {
+                transform.rotation = Quaternion.Slerp(transform.rotation,
+                    Quaternion.LookRotation(transform.forward + Vector3.up * 0.5f), Time.deltaTime * 10f);
+            }
+        }
+    }
+
+    private Vector3 GetTargetCenter()
+    {
+        if (target == null) return transform.position + transform.forward;
+
+        // ì ì˜ ë°œ ìœ„ì¹˜ê°€ ì•„ë‹Œ ì¤‘ì‹¬ì (CapsuleCollider ë“±)ì„ ì¡°ì¤€í•˜ë„ë¡ ë³´ì •
+        if (target.TryGetComponent<Collider>(out var col))
+        {
+            return col.bounds.center;
+        }
+        return target.position + Vector3.up * 1.0f; // ì½œë¼ì´ë” ì—†ìœ¼ë©´ ì„ì˜ë¡œ ë†’ì„
+    }
+
+    private void MoveForward(float speed) => transform.position += transform.forward * speed * Time.deltaTime;
+
+    private void ValidateTarget()
+    {
+        if (target != null && (!target.gameObject.activeInHierarchy || (targetHealth != null && targetHealth.IsDead)))
+        {
+            target = null;
+            targetHealth = null;
+        }
+
+        if (target == null) FindNewTarget();
+    }
+
+    private void FindNewTarget()
+    {
+        Collider[] cols = Physics.OverlapSphere(transform.position, detectRadius);
+        float minTargetDist = detectRadius;
+
+        foreach (var col in cols)
+        {
+            if (col.CompareTag("Monster") && col.TryGetComponent<EnemyHealth>(out var h))
+            {
+                if (h.IsDead) continue;
+
+                float dist = Vector3.Distance(transform.position, col.transform.position);
+                Vector3 dir = (col.transform.position - transform.position).normalized;
+
+                // ì‹œì•¼ ê°ë„ ë‚´ì— ìˆëŠ” ì ë§Œ íƒ€ê²ŸíŒ…
+                if (Vector3.Angle(initialDirection, dir) < maxHomingAngle && dist < minTargetDist)
                 {
-                    closestDist = d;
-                    closest = m.transform;
+                    minTargetDist = dist;
+                    target = col.transform;
+                    targetHealth = h;
                 }
             }
         }
-        return closest;
     }
 }
