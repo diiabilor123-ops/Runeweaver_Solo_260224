@@ -284,15 +284,23 @@ public class Bullet_Homing : BulletBase
 
     private void PreventGroundCollision()
     {
-        // 바닥에서 일정 높이 이하로 내려가려 하면 강제로 위를 보게 함
-        if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, groundOffset))
+        // 감지 거리를 약간 더 늘림 (groundOffset * 1.5f)
+        if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, groundOffset * 1.5f))
         {
-            // 1. 태그가 Ground거나 
-            // 2. 혹은 레이어가 Environment(환경)인 경우에만 반응 (태그 에러 방지용 체크 추가 가능)
             if (hit.collider.CompareTag("Ground"))
             {
-                transform.rotation = Quaternion.Slerp(transform.rotation,
-                    Quaternion.LookRotation(transform.forward + Vector3.up * 0.5f), Time.deltaTime * 10f);
+                // [개선] 단순히 위를 보는 게 아니라, 지면의 법선(Normal) 방향을 참고하여 
+                // 현재 진행 방향을 지면과 평행하게 꺾어버립니다.
+                Vector3 reflectiveDir = Vector3.ProjectOnPlane(transform.forward, hit.normal).normalized;
+
+                // 땅에 가까워질수록 회전력을 극대화 (강제로 머리를 들어올림)
+                float liftForce = Mathf.Clamp01(1.0f - (hit.distance / (groundOffset * 1.5f)));
+
+                transform.rotation = Quaternion.Slerp(
+                    transform.rotation,
+                    Quaternion.LookRotation(reflectiveDir + Vector3.up * 0.2f),
+                    Time.deltaTime * 30f * liftForce // 땅에 가까울수록 더 강하게!
+                );
             }
         }
     }

@@ -81,6 +81,13 @@ public class BulletBase : MonoBehaviour
             return;
         }
 
+        // 땅에 부딪히면 이펙트를 남기고 사라짐
+        if (other.CompareTag("Ground"))
+        {
+            // 필요하다면 이곳에 작은 먼지 이펙트 생성 로직 추가
+            Deactivate();
+        }
+
         // 2. 적 충돌
         if (other.TryGetComponent<EnemyHealth>(out var enemyHealth))
         {
