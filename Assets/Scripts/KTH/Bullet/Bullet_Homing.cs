@@ -49,6 +49,9 @@ public class Bullet_Homing : BulletBase
     private float dynamicStartDelay;       // 거리 기반 가변 딜레이
     private float currentArcScale;         // 거리 기반 가변 폭
 
+    private float voltNextSnapTime = 0f;
+    private Vector3 voltNoiseOffset;
+
     void Awake()
     {
         // 부모(BulletBase) 필드는 이미 있으므로 자식에서 필요한 것만 참조
@@ -106,7 +109,7 @@ public class Bullet_Homing : BulletBase
         switch (style)
         {
             case HomingStyle.Fire:
-                offset = (sideOffsetDir * (finalOffset + randomSide)) + (Vector3.up * 0.2f);
+                offset = (sideOffsetDir * (finalOffset + randomSide)) + (initialDirection * -0.5f);
                 break;
             case HomingStyle.Ice:
                 offset = (sideOffsetDir * randomSide) + (initialDirection * -0.3f);
@@ -124,13 +127,6 @@ public class Bullet_Homing : BulletBase
     {
         // [수정] Setup이 끝나기 전이거나 비활성 상태면 로직을 실행하지 않음
         if (!isInitialized || !IsActive) return;
-
-        // 2단계: 핵심 변수 값 확인 (움직이지 않는 직접적 원인)
-        // 속도가 0이거나, deltaTime이 이상하거나, 프레임이 멈췄는지 확인
-        if (Time.frameCount % 30 == 0) // 너무 많이 찍히지 않게 30프레임마다 출력
-        {
-            Debug.Log($"[Debug] {style} 화살 체크 - 속도: {baseHomingSpeed}, 수명: {lifeTimer}/{maxLifeTime}, 위치: {transform.position}");
-        }
 
         lifeTimer += Time.deltaTime;
 
@@ -163,22 +159,31 @@ public class Bullet_Homing : BulletBase
 
         // [개선] 적이 초근접(예: 3m 이내) 상태라면 궤적 시간을 거의 0으로 만듦
         float finalMinDelay = (distToTarget < 3.0f) ? 0.05f : 0.15f;
-        dynamicStartDelay = Mathf.Clamp(distToTarget / 30f, finalMinDelay, homingStartDelay);
+        dynamicStartDelay = Mathf.Clamp(distToTarget / 10f, finalMinDelay, homingStartDelay);
 
         // [개선] 가까울수록 옆으로 벌어지는 힘(Arc)을 더 극단적으로 줄임
         float arcReduction = (distToTarget < 5.0f) ? 0.3f : 1.0f;
-        currentArcScale = Mathf.Clamp(distToTarget / 10f, minArcWidth, maxArcWidth) * arcReduction;
+        currentArcScale = Mathf.Clamp(distToTarget / 5f, minArcWidth, maxArcWidth) * arcReduction * 0.5f;
 
         if (lifeTimer < dynamicStartDelay)
         {
-            // 1. 궤적 구간
-            float progress = lifeTimer / dynamicStartDelay;
-            Vector3 sideArc = sideOffsetDir * (currentArcScale * sideSign) * (1.0f - progress);
+            float progress = lifeTimer / dynamicStartDelay; // 0에서 1로 변함
 
-            // [핵심] 적이 가까우면 정면 전진 힘을 더 강하게 주어 지나침 방지
-            Vector3 forwardVec = Vector3.Lerp(initialDirection, (GetTargetCenter() - transform.position).normalized, progress);
+            // [핵심 1] 뒤로 갔다가 앞으로 오는 반동 (Sin 곡선 활용)
+            // -1(뒤)에서 시작해서 1(앞)로 끝나는 느낌
+            float recoil = Mathf.Lerp(-1.5f, 1.0f, progress);
+            Vector3 depthVec = initialDirection * recoil;
 
-            Vector3 moveDir = (forwardVec + sideArc).normalized;
+            // [핵심 2] 옆으로 벌어지는 폭 (Sin 곡선으로 중간에 가장 멀리 퍼지게 함)
+            float sideAmount = Mathf.Sin(progress * Mathf.PI) * currentArcScale * sideSign;
+            Vector3 sideVec = sideOffsetDir * sideAmount;
+
+            // [핵심 3] 위로 솟구치는 높이
+            float upAmount = Mathf.Sin(progress * Mathf.PI) * (currentArcScale * 0.1f);
+            Vector3 upVec = Vector3.up * upAmount;
+
+            // 모든 힘을 합쳐 현재 이동 방향 결정
+            Vector3 moveDir = (initialDirection + sideVec + upVec + depthVec).normalized;
 
             // 초근접 시 회전 속도를 2배로 올려서 즉시 적을 향하게 함
             float instantTurnSlerp = (distToTarget < 5.0f) ? 25f : 12f;
@@ -188,11 +193,18 @@ public class Bullet_Homing : BulletBase
         else
         {
             // 2. 유도 및 가속 구간 (기존과 동일하되 회전력 보강)
-            float accelProgress = (lifeTimer - dynamicStartDelay) / accelerationTime;
+            float accelProgress = (lifeTimer - dynamicStartDelay) / (accelerationTime * 0.7F);
             float currentSpeed = Mathf.Lerp(baseHomingSpeed, maxHomingSpeed, accelProgress);
 
             if (target != null)
             {
+                // [추가] 번개의 개성: 지그재그 노이즈 생성 (0.1초마다 갱신)
+                if (lifeTimer > voltNextSnapTime)
+                {
+                    voltNextSnapTime = lifeTimer + 0.1f;
+                    voltNoiseOffset = Random.insideUnitSphere * 0.3f; // 방향에 30% 정도 무작위성 추가
+                }
+
                 Vector3 dirToTarget = (GetTargetCenter() - transform.position).normalized;
                 float angleToTarget = Vector3.Angle(transform.forward, dirToTarget);
 
@@ -213,7 +225,7 @@ public class Bullet_Homing : BulletBase
 
         // 번개는 거리가 가까우면 궤적 구간을 아예 스킵하듯 아주 짧게 설정
         float voltMinDelay = (distToTarget < 4.0f) ? 0.02f : 0.1f;
-        float voltDynamicDelay = Mathf.Clamp(distToTarget / 40f, voltMinDelay, homingStartDelay * 0.6f);
+        float voltDynamicDelay = Mathf.Clamp(distToTarget / 10f, voltMinDelay, homingStartDelay * 0.6f);
 
         if (lifeTimer < voltDynamicDelay)
         {

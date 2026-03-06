@@ -67,8 +67,6 @@ public class BulletBase : MonoBehaviour
         // 반드시 IsActive 설정 후에 호출되어야 이펙트가 부모를 따라 움직입니다.
         var visuals = GetComponent<EffectVisuals>();
         if (visuals != null) visuals.InitializeVisuals();
-
-        Debug.Log($"[BulletBase] {gameObject.name} 활성화 완료! IsActive: {IsActive}");
     }
 
     // [공통 충돌 로직]

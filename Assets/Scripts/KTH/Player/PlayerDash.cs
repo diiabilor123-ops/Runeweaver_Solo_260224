@@ -11,9 +11,6 @@ namespace Runeweaver.Player
     /// </summary>
     public class PlayerDash : MonoBehaviour
     {
-        [SerializeField] private float dashDistance = 5f;
-        [SerializeField] private float dashDuration = 0.2f; // 대시 속도 (낮을수록 빠름)
-        [SerializeField] private float dashCooldown = 0.5f;
 
         [Header("Ghost Effect")]
         [SerializeField] private DashGhostManager ghostManager; // 하이어라키의 매니저 연결
@@ -58,11 +55,10 @@ namespace Runeweaver.Player
 
             // 4. DOTween 이동: In-Place 애니메이션이므로 코드가 직접 좌표를 옮깁니다.
             // Ease.OutQuad는 처음에 빠르고 끝에 살짝 감속되어 타격감이 좋습니다.
-            transform.DOMove(transform.position + dashDirection * dashDistance, dashDuration)
-                     .SetEase(Ease.OutQuad);
+            transform.DOMove(transform.position + dashDirection * PlayerStats.Instance.dashDistance, PlayerStats.Instance.dashDuration);
 
             // 대시 이동 시간만큼 대기
-            yield return new WaitForSeconds(dashDuration);
+            yield return new WaitForSeconds(PlayerStats.Instance.dashDuration);
 
             // 5. 대시 종료 처리
             // 대시 종료 시 잔상 생성 중지
@@ -74,7 +70,7 @@ namespace Runeweaver.Player
             if (_anim) _anim.ResetTrigger("Dash");
 
             // 6. 쿨타임 대기
-            yield return new WaitForSeconds(dashCooldown);
+            yield return new WaitForSeconds(PlayerStats.Instance.dashCooldown);
             CanDash = true;
         }
 

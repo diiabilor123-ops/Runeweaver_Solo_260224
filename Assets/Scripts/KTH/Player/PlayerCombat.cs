@@ -100,8 +100,7 @@ namespace Runeweaver.Player
             _aimHandler.UpdateAim(); // 2. 발사 직전 다시 조준 (정밀도 향상)
 
             // 1. 이번 공격의 데미지 판정을 미리 계산합니다.
-            // (나중에 실제 플레이어 치명타 확률 변수를 여기에 연결하세요)
-            float playerCritChance = 0.15f; // 예: 기본 15%
+            float playerCritChance = PlayerStats.Instance.critRate;
             bool isCrit = UnityEngine.Random.value < playerCritChance;
 
             // 2. 현재 공격 속도를 계산합니다. (번개 유도 화살 확률에 영향)
