@@ -9,8 +9,6 @@ namespace Runeweaver.Player
     /// </summary>
     public class PlayerMovement : MonoBehaviour
     {
-        [SerializeField] private float moveSpeed = 6f;
-        [SerializeField] private float rotateSpeed = 25f;
         [SerializeField] private float acceleration = 10f; // 애니메이션 파라미터 변화 속도
 
 
@@ -40,15 +38,15 @@ namespace Runeweaver.Player
             {
                 // 1. 회전: 입력 방향(dir)으로 즉각적인 회전 (Slerp)
                 Quaternion targetRotation = Quaternion.LookRotation(dir);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotateSpeed);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * PlayerStats.Instance.rotateSpeed);
 
                 // 2. 이동: 월드 좌표 기준 정직한 이동 (In-Place 애니메이션을 쓰므로 코드가 이동을 전담)
-                transform.position += dir * moveSpeed * Time.deltaTime;
+                transform.position += dir * PlayerStats.Instance.moveSpeed * Time.deltaTime;
 
                 // [핵심 해결책] 
                 // 애니메이터 전체 재생 속도(speed)를 실제 moveSpeed에 비례하게 조절합니다.
                 // 발이 너무 미끄러지면 animSpeedMultiplier 값을 인스펙터에서 조절해보세요.
-                _anim.speed = 1.0f + (moveSpeed * animSpeedMultiplier);
+                _anim.speed = 1.0f + (PlayerStats.Instance.moveSpeed * animSpeedMultiplier);
 
                 // 3. 애니메이션: 블렌드 트리용 Speed 값을 1(Run)로 서서히 올림
                 UpdateAnimationParameter(dir.magnitude);

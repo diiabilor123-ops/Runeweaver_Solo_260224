@@ -48,8 +48,6 @@ public class FeedbackManager : MonoBehaviour
     /// 실제 피드백을 실행하는 통합 함수
     public void ExecuteHitFeedback(float duration, float intensity)
     {
-        // [로그 추가] 콘솔창에 이 메시지가 떠야 정상 호출된 것입니다.
-        Debug.Log($"<color=cyan>[Feedback] 실행됨! 강도: {intensity}</color>");
 
         // 1. 역경직 실행 (0초 이상일 때만)
         if (duration > 0) PlayHitStop(duration);

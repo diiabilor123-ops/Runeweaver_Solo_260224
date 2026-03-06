@@ -67,8 +67,6 @@ public class BulletBase : MonoBehaviour
         // 반드시 IsActive 설정 후에 호출되어야 이펙트가 부모를 따라 움직입니다.
         var visuals = GetComponent<EffectVisuals>();
         if (visuals != null) visuals.InitializeVisuals();
-
-        Debug.Log($"[BulletBase] {gameObject.name} 활성화 완료! IsActive: {IsActive}");
     }
 
     // [공통 충돌 로직]
@@ -81,6 +79,13 @@ public class BulletBase : MonoBehaviour
         {
             Deactivate();
             return;
+        }
+
+        // 땅에 부딪히면 이펙트를 남기고 사라짐
+        if (other.CompareTag("Ground"))
+        {
+            // 필요하다면 이곳에 작은 먼지 이펙트 생성 로직 추가
+            Deactivate();
         }
 
         // 2. 적 충돌

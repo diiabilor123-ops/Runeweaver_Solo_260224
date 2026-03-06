@@ -173,10 +173,17 @@ MonoBehaviour:
   firedFromSlot: 2
   specificType: 1
   style: 0
-  baseHomingSpeed: 6
-  baseRotateSpeed: 10
+  baseHomingSpeed: 7
+  maxHomingSpeed: 35
+  accelerationTime: 0.8
+  baseRotateSpeed: 25
   detectRadius: 15
   maxLifeTime: 5
   homingStartDelay: 0.6
   maxHomingAngle: 110
+  reHomingAngle: 100
+  arrivalDistance: 1
   groundOffset: 0.5
+  maxArcWidth: 3
+  minArcWidth: 0.6
+  minArcDistance: 5

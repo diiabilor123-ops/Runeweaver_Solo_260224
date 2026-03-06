@@ -77,9 +77,23 @@ public class GameMaster : MonoBehaviour
     // 확률 100% 강제 고정 (테스트 편의성)
     private void ForceMaxProbability()
     {
+        if (PlayerAugment.Instance == null || PlayerAugment.Instance.leftClick == null) return;
+
         var aug = PlayerAugment.Instance.leftClick;
+
+        // 1. 기존 원소 발사 확률 최대화
         aug.iceSpawnChance = 1.0f;
         aug.voltBaseChance = 1.0f;
+
+        // 2. [치명타 확률 100%로 만들기]
+        // 플레이어 스탯을 관리하는 스크립트(예: PlayerStats)를 찾아서 수정합니다.
+        // 만약 스크립트 이름을 모르신다면 확인이 필요합니다.
+        var playerStats = FindFirstObjectByType<PlayerStats>();
+        if (playerStats != null)
+        {
+            playerStats.critRate = 1.0f; // 치명타 확률 100%
+            Debug.Log("<color=orange>[GM] 플레이어 치명타 확률 100% 설정 완료!</color>");
+        }
     }
 
     // 현재 특정 원소가 몇 스택인지 체크하는 보조 메서드
