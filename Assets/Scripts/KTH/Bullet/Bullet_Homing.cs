@@ -15,15 +15,24 @@ public class Bullet_Homing : BulletBase
     public HomingStyle style;
 
     [Header("Basic Movement")]
-    public float baseHomingSpeed = 10f;    // 이동 속도
-    public float baseRotateSpeed = 18f;    // 회전(선회) 강도
-    public float detectRadius = 25f;       // 적 감지 범위
-    public float maxLifeTime = 5f;         // 최대 수명
+    public float baseHomingSpeed = 8f;     // 시작 속도
+    public float maxHomingSpeed = 22f;    // 가속 시 최대 속도
+    public float accelerationTime = 1.2f; // 최대 속도까지 걸리는 시간
+    public float baseRotateSpeed = 25f;    // 회전 강도
+    public float detectRadius = 25f;       // 감지 범위
+    public float maxLifeTime = 5f;
 
-    [Header("Trajectory Settings")]
-    public float homingStartDelay = 0.5f;  // [핵심] 이 시간 동안은 궤적을 그리며 밖으로 퍼짐
-    public float maxHomingAngle = 110f;    // 유도 가능한 최대 각도 (등 뒤 방지)
-    public float groundOffset = 0.5f;      // [지면 박힘 방지] 최소 높이 유지
+    [Header("Trajectory & Smart Homing")]
+    public float homingStartDelay = 0.5f;  // 최대 궤적 유지 시간
+    public float maxHomingAngle = 110f;    // 유도 가능 각도
+    public float reHomingAngle = 100f;     // 추격 유지 각도
+    public float arrivalDistance = 1.0f;   // 직격 판정 거리 (이기어검 방지)
+    public float groundOffset = 0.5f;
+
+    [Header("Adaptive Settings")]
+    public float maxArcWidth = 3.0f;       // 멀리 있을 때 궤적 폭
+    public float minArcWidth = 0.6f;       // 가까이 있을 때 궤적 폭
+    public float minArcDistance = 5.0f;    // 이 거리 이하일 때 '근접 추격' 모드
 
     private TrailRenderer trail;
     private Rigidbody rb; // 물리 리셋용
@@ -37,6 +46,8 @@ public class Bullet_Homing : BulletBase
 
     // [추가] Setup이 완전히 끝났는지 확인하는 플래그
     private bool isInitialized = false;
+    private float dynamicStartDelay;       // 거리 기반 가변 딜레이
+    private float currentArcScale;         // 거리 기반 가변 폭
 
     void Awake()
     {
@@ -52,55 +63,33 @@ public class Bullet_Homing : BulletBase
         lifeTimer = 0f;
     }
 
-    // [핵심 수정] Setup을 오버라이드하여 데이터 주입 직후 초기화를 수행합니다.
     public override void Setup(BulletDataSO data, Vector3 direction, List<ElementType> elements, SkillSlotType slot, GameObject originPrefab = null)
     {
-        // 1. 물리 및 타이머 완전 초기화 (풀링 재사용 핵심)
-        if (rb != null)
-        {
-            rb.isKinematic = true; // 위치 세팅 동안 물리 연산 중지
-            rb.linearVelocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
-        }
-
-        // 2. 부모 Setup 호출 (여기서 IsActive = true, SetActive(true) 됨)
         base.Setup(data, direction, elements, slot, originPrefab);
 
-        // 3. 데이터 확립
-        initialDirection = direction.normalized;
-        if (initialDirection.sqrMagnitude < 0.001f) initialDirection = transform.forward;
+        // 3. [속도 조절] SO 데이터를 가져오되, 유도 화살 특유의 '체공 느낌'을 위해 배율을 낮춥니다.
+        if (data != null)
+            this.baseHomingSpeed = data.speed * 0.25f; // 원래 속도의 절반 정도로 시작 (예: 10f)
+        else
+            this.baseHomingSpeed = 5f;
+
+        // 4~7. 기존 방향 및 초기화 로직 동일
+        this.initialDirection = direction.normalized;
+        if (this.initialDirection.sqrMagnitude < 0.001f) this.initialDirection = transform.forward;
+        transform.forward = this.initialDirection;
+        sideOffsetDir = Vector3.Cross(Vector3.up, initialDirection).normalized;
+        sideSign = (Random.value > 0.5f) ? 1f : -1f;
 
         lifeTimer = 0f;
         target = null;
         targetHealth = null;
 
-        if (trail != null)
-        {
-            trail.Clear();
-            trail.emitting = true;
-        }
-
-        // 3. 방향 데이터 확립 (딱 한 번만 실행)
-        initialDirection = direction.normalized;
-        if (initialDirection.sqrMagnitude < 0.001f) initialDirection = transform.forward;
-
-        transform.forward = initialDirection;
-        sideOffsetDir = Vector3.Cross(Vector3.up, initialDirection).normalized;
-        sideSign = (Random.value > 0.5f) ? 1f : -1f;
-
-
-        // 4. 위치 보정 및 타겟 탐색
+        if (trail != null) { trail.Clear(); trail.emitting = true; }
         SetupInitialPosition();
         FindNewTarget();
 
-        // [수정] 세팅이 끝난 후 다시 물리 연산 허용 (단, 이동은 transform으로 하므로 kinematic 유지도 방법)
-        if (rb != null) rb.isKinematic = false;
-
-        // 4. [핵심] 모든 설정이 끝났음을 알림
-        isInitialized = true;
+        this.isInitialized = true;
         this.IsActive = true;
-
-        Debug.Log($"[Homing Setup 완료] {gameObject.name} / IsActive: {IsActive}");
     }
 
     /// <summary>
@@ -170,59 +159,81 @@ public class Bullet_Homing : BulletBase
 
     private void UpdateFireTrajectory()
     {
-        // [수정] 중첩된 if문 정리 및 유도 로직 복구
-        if (lifeTimer < homingStartDelay)
+        float distToTarget = (target != null) ? Vector3.Distance(transform.position, GetTargetCenter()) : 20f;
+
+        // [개선] 적이 초근접(예: 3m 이내) 상태라면 궤적 시간을 거의 0으로 만듦
+        float finalMinDelay = (distToTarget < 3.0f) ? 0.05f : 0.15f;
+        dynamicStartDelay = Mathf.Clamp(distToTarget / 30f, finalMinDelay, homingStartDelay);
+
+        // [개선] 가까울수록 옆으로 벌어지는 힘(Arc)을 더 극단적으로 줄임
+        float arcReduction = (distToTarget < 5.0f) ? 0.3f : 1.0f;
+        currentArcScale = Mathf.Clamp(distToTarget / 10f, minArcWidth, maxArcWidth) * arcReduction;
+
+        if (lifeTimer < dynamicStartDelay)
         {
-            float progress = lifeTimer / homingStartDelay;
-            Vector3 forwardBackward = Vector3.Lerp(-initialDirection * 1.2f, initialDirection, progress);
-            Vector3 sideArc = sideOffsetDir * (3.0f * sideSign) * (1.0f - progress);
-            Vector3 upArc = Vector3.up * 0.5f;
+            // 1. 궤적 구간
+            float progress = lifeTimer / dynamicStartDelay;
+            Vector3 sideArc = sideOffsetDir * (currentArcScale * sideSign) * (1.0f - progress);
 
-            Vector3 moveDir = (forwardBackward + sideArc + upArc).normalized;
+            // [핵심] 적이 가까우면 정면 전진 힘을 더 강하게 주어 지나침 방지
+            Vector3 forwardVec = Vector3.Lerp(initialDirection, (GetTargetCenter() - transform.position).normalized, progress);
+
+            Vector3 moveDir = (forwardVec + sideArc).normalized;
+
+            // 초근접 시 회전 속도를 2배로 올려서 즉시 적을 향하게 함
+            float instantTurnSlerp = (distToTarget < 5.0f) ? 25f : 12f;
             transform.position += moveDir * baseHomingSpeed * Time.deltaTime;
-
-            if (moveDir != Vector3.zero)
-                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(moveDir), Time.deltaTime * 10f);
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(moveDir), Time.deltaTime * instantTurnSlerp);
         }
         else
         {
-            // 실제 유도 구간
-            if (target != null)
-                RotateTowards(GetTargetCenter(), 1.0f);
-            else
-                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(initialDirection), Time.deltaTime * 3f);
+            // 2. 유도 및 가속 구간 (기존과 동일하되 회전력 보강)
+            float accelProgress = (lifeTimer - dynamicStartDelay) / accelerationTime;
+            float currentSpeed = Mathf.Lerp(baseHomingSpeed, maxHomingSpeed, accelProgress);
 
-            MoveForward(baseHomingSpeed * 1.4f);
+            if (target != null)
+            {
+                Vector3 dirToTarget = (GetTargetCenter() - transform.position).normalized;
+                float angleToTarget = Vector3.Angle(transform.forward, dirToTarget);
+
+                if (angleToTarget < reHomingAngle)
+                {
+                    // 적이 가까울수록 회전 배율을 높임 (1.4f -> 최대 3.0f)
+                    float distanceWeight = Mathf.Clamp(10f / distToTarget, 1.0f, 3.0f);
+                    RotateTowards(GetTargetCenter(), 1.4f * distanceWeight);
+                }
+            }
+            MoveForward(currentSpeed);
         }
     }
 
     private void UpdateVoltTrajectory()
     {
-        // 번개 유도 시작 시점을 약간 늦추거나 부드럽게 연결
-        float voltDelay = homingStartDelay * 0.5f;
+        float distToTarget = (target != null) ? Vector3.Distance(transform.position, GetTargetCenter()) : 20f;
 
-        if (lifeTimer < voltDelay)
+        // 번개는 거리가 가까우면 궤적 구간을 아예 스킵하듯 아주 짧게 설정
+        float voltMinDelay = (distToTarget < 4.0f) ? 0.02f : 0.1f;
+        float voltDynamicDelay = Mathf.Clamp(distToTarget / 40f, voltMinDelay, homingStartDelay * 0.6f);
+
+        if (lifeTimer < voltDynamicDelay)
         {
-            // [번개: 정면 지향성 추가] initialDirection 비중을 높여 90도 꺾임을 방지
-            // 왼쪽 대각선 앞으로 자연스럽게 전진
-            Vector3 arcVec = (initialDirection * 1.2f - sideOffsetDir * 0.8f + Vector3.up * 0.3f).normalized;
-
-            transform.position += arcVec * baseHomingSpeed * 1.2f * Time.deltaTime;
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(arcVec), Time.deltaTime * 10f);
+            // 초기 궤적 (생략 가능할 정도로 짧음)
+            Vector3 arcVec = (initialDirection + sideOffsetDir * -0.5f).normalized;
+            transform.position += arcVec * baseHomingSpeed * Time.deltaTime;
         }
         else
         {
-            // 적이 없을 때도 90도로 꺾여있지 않도록 정면을 유지하게 함
+            // 유도 구간: 번개는 "지나침"이 발생하려 할 때 더 날카로운 각도로 꺾임
+            float accelProgress = (lifeTimer - voltDynamicDelay) / (accelerationTime * 0.7f);
+            float currentSpeed = Mathf.Lerp(baseHomingSpeed * 1.3f, maxHomingSpeed * 1.2f, accelProgress);
+
             if (target != null)
             {
-                RotateTowards(GetTargetCenter(), 2.0f);
+                // 가까우면 회전 속도를 어마어마하게 높여서 '직각'으로 꺾이는 느낌 전달
+                float voltTurnWeight = (distToTarget < 5.0f) ? 4.0f : 2.0f;
+                RotateTowards(GetTargetCenter(), voltTurnWeight);
             }
-            else
-            {
-                // 타겟이 없으면 다시 정면 방향으로 서서히 회전 복귀
-                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(initialDirection), Time.deltaTime * 2f);
-            }
-            MoveForward(baseHomingSpeed * 1.7f);
+            MoveForward(currentSpeed);
         }
     }
 

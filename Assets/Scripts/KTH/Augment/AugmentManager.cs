@@ -54,24 +54,44 @@ public class AugmentManager : MonoBehaviour
         }
     }
 
+    // AugmentManager.cs에 추가할 내용
+    private void Update()
+    {
+        if (augmentUIPanel.activeSelf)
+        {
+            // 여기서 30초 타이머 체크 로직 수행
+            // 시간이 다 되면 UI의 첫 번째 카드를 강제로 선택하게 함
+        }
+    }
+
     /// <summary>
     /// UI에서 최종 선택 버튼을 눌렀을 때 호출
     /// </summary>
     public void ApplySelect(SkillSlotType slot, ElementType element)
     {
-        // 1. 데이터 저장 (PlayerAugment는 플레이어 전용이므로 ElementType 사용)
-        if (PlayerAugment.Instance != null)
+        // 1. 데이터 저장
+        PlayerAugment.Instance.AddElementStack(slot, element);
+
+        // 2. UI 하단 HUD 갱신 (성능 최적화 버전)
+        // FindObjectOfType 대신 싱글톤(Instance)을 사용하여 즉시 접근합니다.
+        if (MainHUDController.Instance != null)
         {
-            PlayerAugment.Instance.AddElementStack(slot, element);
+            MainHUDController.Instance.RefreshAllSlots();
         }
 
-        // 2. 시간 재개 및 UI 닫기
+        // 3. 시간 재개 및 UI 닫기
         Time.timeScale = 1f;
         if (augmentUIPanel != null)
         {
             augmentUIPanel.SetActive(false);
         }
-
-        Debug.Log($"[Augment] {slot} 슬롯에 {element} 속성 강화 적용!");
     }
+
+    // AugmentManager.cs 내부에 추가
+    public AugmentDataSO GetAugmentData(SkillSlotType slot, ElementType element)
+    {
+        // 리스트에서 슬롯과 원소가 모두 일치하는 SO를 찾아서 반환
+        return allAugments.Find(x => x.targetSlot == slot && x.elementType == element);
+    }
+
 }

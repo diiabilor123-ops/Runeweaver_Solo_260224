@@ -9,6 +9,11 @@ using TMPro; // 텍스트 매시 프로 사용 시
 
 public class AugmentUI : MonoBehaviour
 {
+    [Header("Timer Settings")]
+    public TextMeshProUGUI timerText; // 30초 표시용 텍스트 연결
+    private float selectionTimer = 30f;
+    private bool isTimerActive = false;
+
     [System.Serializable]
     public struct ChoiceCard
     {
@@ -26,6 +31,9 @@ public class AugmentUI : MonoBehaviour
     // [기능: 슬롯 선택지 생성 및 강화 효과 미리보기]
     public void SetupSlotChoices(ElementType element, List<SkillSlotType> slots)
     {
+        selectionTimer = 30f; // 타이머 리셋
+        isTimerActive = true;
+
         for (int i = 0; i < cards.Length; i++)
         {
             if (i >= slots.Count)
@@ -57,12 +65,31 @@ public class AugmentUI : MonoBehaviour
 
             // 4. [수정] 버튼 이벤트 연결
             cards[i].selectButton.onClick.RemoveAllListeners();
-            cards[i].selectButton.onClick.AddListener(() => {
+            cards[i].selectButton.onClick.AddListener(() =>
+            {
                 // 매니저를 통해 데이터를 플레이어에게 저장하고 UI를 닫음
                 AugmentManager.Instance.ApplySelect(slot, element);
             });
 
 
+        }
+    }
+
+    void Update()
+    {
+        if (!isTimerActive) return;
+
+        // Time.timeScale이 0일 때도 흐르는 시간(unscaledDeltaTime) 사용
+        selectionTimer -= Time.unscaledDeltaTime;
+
+        if (timerText != null)
+            timerText.text = Mathf.CeilToInt(selectionTimer).ToString();
+
+        if (selectionTimer <= 0)
+        {
+            isTimerActive = false;
+            // 시간 초과 시 첫 번째 카드 강제 선택
+            cards[0].selectButton.onClick.Invoke();
         }
     }
 
@@ -81,34 +108,41 @@ public class AugmentUI : MonoBehaviour
         }
     }
 
-    // [중요] 질문자님의 1~6단계 기획안을 UI에 반영
+    // AugmentUI.cs 내의 함수 수정 예시
     private string GetPreviewEffect(SkillSlotType slot, ElementType element, int count)
     {
-        // 일단은 기획하신 왼클릭(기본공격) 위주로 작성
-        if (slot == SkillSlotType.LeftClick)
+        // 1. Manager를 통해 해당 슬롯/원소에 맞는 SO 데이터를 가져옴
+        AugmentDataSO data = AugmentManager.Instance.GetAugmentData(slot, element);
+
+        // 2. 데이터가 있고, 스택이 1~6단계 사이라면 SO의 설명을 반환
+        if (data != null && count >= 1 && count <= 6)
         {
-            switch (count)
-            {
-                case 1:
-                    string statName = element == ElementType.Fire ? "치확" : (element == ElementType.Ice ? "공격력" : "공속");
-                    return $"<color=green>[1단계] {statName} +8% 및 패시브 활성화</color>";
-                case 2:
-                    return "<color=cyan>[2단계] 유도 화살 추가 해금</color>";
-                case 3:
-                    string statName3 = element == ElementType.Fire ? "치확" : (element == ElementType.Ice ? "공격력" : "공속");
-                    return $"<color=green>[3단계] {statName3} +12%</color>";
-                case 4:
-                    return $"<color=orange>[4단계] 공격 속성 ({element}) 전환</color>";
-                case 5:
-                    string statName5 = element == ElementType.Fire ? "치확" : (element == ElementType.Ice ? "공격력" : "공속");
-                    return $"<color=green>[5단계] {statName5} +20%</color>";
-                case 6:
-                    return "<color=red>[6단계] Q스킬 잠금 & 공격 시 자동 발동</color>";
-                default:
-                    return "해당 속성 위력 증가";
-            }
+            return data.stepDescriptions[count - 1];
         }
 
-        return "스탯 강화";
+        // 3. 데이터가 없거나 6단계를 초과한 경우 기본 메시지
+        return "<color=white>위력 추가 강화</color>";
+    }
+
+    // 원소별로 강화되는 스탯 이름을 반환하는 헬퍼 함수
+    private string GetStatNameByElement(ElementType element)
+    {
+        switch (element)
+        {
+            case ElementType.Fire:
+                return "치명타 확률";
+            case ElementType.Ice:
+                return "공격력";
+            case ElementType.Volt:
+                return "공격 속도";
+            case ElementType.Nature:
+                return "체력 재생";
+            case ElementType.Light:
+                return "사거리";
+            case ElementType.Dark:
+                return "피해 흡수";
+            default:
+                return "기본 스탯";
+        }
     }
 }
