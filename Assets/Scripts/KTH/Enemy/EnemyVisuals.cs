@@ -7,39 +7,33 @@ using System.Collections;
 /// </summary>
 public class EnemyVisuals : MonoBehaviour
 {
-    [Header("Materials")]
-    [SerializeField] private Material hitMaterial;
+    [Header("Hit Flash (Shader)")]
+    [SerializeField] private float flashDuration = 0.1f; // [해결] 에러 방지용 변수 선언
+    [SerializeField] private float enemyhitFlashIntensity = 2.0f;
+    private static readonly int HitIntensityID = Shader.PropertyToID("_HitIntensity");
+
+    [Header("WarningMaterials")]
     [SerializeField] private Material warningMaterial; // 돌진 전 기 모으는 용
 
-    [Header("Shield FX (Mesh Based)")]
+    [Header("Shield FX")]
     [SerializeField] private GameObject shieldMeshFX; // 인스펙터에서 FX 메쉬 오브젝트 할당
     [SerializeField] private float shieldShowDuration = 0.15f; // 표시 시간
-
-    //[수정] 이제 이 값은 "배수"로 작동합니다. (예: 1.2면 원래 크기의 120%)
-    [SerializeField] private Vector3 shieldImpactScaleMultiplier = new Vector3(1.2f, 1.2f, 1.2f);
-
-    //[추가] 쉴드 위치 오프셋 (예: Y축으로 1만큼 올림)
-    [SerializeField] private Vector3 shieldOffset = new Vector3(0, 1.0f, 0);
-
-    [Header("Shield FX Settings")]
+    [SerializeField] private Vector3 shieldImpactScaleMultiplier = new Vector3(1.2f, 1.2f, 1.2f); //[수정] 이제 이 값은 "배수"로 작동합니다
+    [SerializeField] private Vector3 shieldOffset = new Vector3(0, 1.0f, 0); //[추가] 쉴드 위치 오프셋 (예: Y축으로 1만큼 올림)
     [SerializeField] private float shieldRotationSpeed = 100f; // 회전 속도 추가
+    [SerializeField] private float shueldhitFlashIntensity = 2.0f; // 피격 시 얼마나 밝게 빛날지
+    [SerializeField] private Color shieldColor = new Color(1f, 0.9f, 0.4f); // 쉴드 기본 색상
 
     [Header("Particles")]
     [SerializeField] private GameObject shieldParticlePrefab; // [추가] 쉴드용 파티클 프리팹
 
-    [Header("Shield Polish")]
-    [SerializeField] private float hitFlashIntensity = 2.0f; // 피격 시 얼마나 밝게 빛날지
-    [SerializeField] private Color shieldColor = new Color(1f, 0.9f, 0.4f); // 쉴드 기본 색상
-
-
     private Material originalMaterial;
     private Renderer targetRenderer;
+    private MaterialPropertyBlock propBlock; // 최적화용 보따리
     private Coroutine flashCoroutine;
     private Coroutine shieldCoroutine;
     private Animator anim;
-
-    // [추가] 인스펙터에서 맞춰둔 쉴드의 원래 크기를 저장할 변수
-    private Vector3 shieldBaseScale;
+    private Vector3 shieldBaseScale;  // [추가] 인스펙터에서 맞춰둔 쉴드의 원래 크기를 저장할 변수
 
     // [추가] 현재 쉴드 상태를 저장하는 변수
     public bool HasShield { get; set; } = false;
@@ -48,6 +42,7 @@ public class EnemyVisuals : MonoBehaviour
     {
         targetRenderer = GetComponentInChildren<Renderer>();
         anim = GetComponent<Animator>();
+        propBlock = new MaterialPropertyBlock();
 
         if (shieldMeshFX != null)
         {
@@ -89,7 +84,7 @@ public class EnemyVisuals : MonoBehaviour
         if (HasShield) return;
 
         if (flashCoroutine != null) StopCoroutine(flashCoroutine);
-        flashCoroutine = StartCoroutine(FlashRoutine(hitMaterial, 0.02f));
+        flashCoroutine = StartCoroutine(HitFlashRoutine());
     }
 
     /// <summary>
@@ -99,7 +94,16 @@ public class EnemyVisuals : MonoBehaviour
     {
         if (flashCoroutine != null) StopCoroutine(flashCoroutine);
         // 예고 시간(data.attackWarningTime) 동안 지속되도록 하거나 고정값 적용
-        flashCoroutine = StartCoroutine(FlashRoutine(warningMaterial, 0.5f));
+        flashCoroutine = StartCoroutine(WarningRoutine());
+    }
+
+    private IEnumerator WarningRoutine()
+    {
+        // 공격 예고 시에는 모델을 흔들지 않고, 단순히 붉은 기운만 감돌게 예시를 듭니다.
+        // (쉐이더에 _WarningColor 같은 변수를 추가해서 조절하는 것이 좋습니다)
+        // 지금은 임시로 기존 기능을 쓰되 '피격'처럼 보이지 않게 처리하세요.
+        yield return new WaitForSeconds(0.5f);
+        flashCoroutine = null;
     }
 
     /// <summary>
@@ -169,7 +173,7 @@ public class EnemyVisuals : MonoBehaviour
 
             // 연출 팁 2: 밝기 조절 (피격 순간 반짝였다가 어두워짐)
             // "_EmissionColor"는 표준 HDR 머티리얼에서 빛나는 색상을 조절합니다.
-            float intensity = Mathf.Lerp(hitFlashIntensity, 0f, t);
+            float intensity = Mathf.Lerp(shueldhitFlashIntensity, 0f, t);
             shieldMat.SetColor("_EmissionColor", shieldColor * intensity);
 
             // 연출 팁 3: 스케일 미세 변화 (살짝 수축되는 느낌)
@@ -192,18 +196,41 @@ public class EnemyVisuals : MonoBehaviour
         }
     }
 
-    private IEnumerator FlashRoutine(Material targetMat, float duration)
+    private IEnumerator HitFlashRoutine()
     {
-        if (targetRenderer == null || targetMat == null) yield break;
+        if (targetRenderer == null) yield break;
 
-        // [최적화 방식 대신 머티리얼 교체 방식을 사용하여 눈에 보이게 함]
-        targetRenderer.material = targetMat;
+        // 1. 몬스터의 원래 모델 위치 기억 (진동 후 돌아오기 위해)
+        Vector3 originalPos = transform.localPosition;
 
-        // [해결] 너무 짧은 시간은 프레임 문제를 일으킬 수 있으므로 최소 1프레임 이상 대기 권장
-        // 하데스 스타일 0.04f 적용
-        yield return new WaitForSeconds(duration);
+        // 2. 번쩍임 시작 (1보다 높게 주면 더 눈부시게 빛납니다)
+        SetHitIntensity(enemyhitFlashIntensity);
 
-        targetRenderer.material = originalMaterial; // 되돌림
+        float elapsed = 0f;
+        while (elapsed < flashDuration)
+        {
+            elapsed += Time.deltaTime;
+
+            // [핵심] 로아식 우찔거림: 모델을 아주 미세하게 랜덤 좌표로 흔듭니다.
+            // FeedbackManager의 카메라 흔들림과 시너지를 내서 타격감이 폭발합니다.
+            transform.localPosition = originalPos + (Vector3)UnityEngine.Random.insideUnitCircle * 0.1f;
+
+            yield return null;
+        }
+
+        // 3. 복구
+        transform.localPosition = originalPos;
+        SetHitIntensity(0f);
+        flashCoroutine = null;
+    }
+
+    // [해결] 에러가 났던 SetHitIntensity 함수 추가
+    private void SetHitIntensity(float value)
+    {
+        if (targetRenderer == null) return;
+        targetRenderer.GetPropertyBlock(propBlock);
+        propBlock.SetFloat(HitIntensityID, value);
+        targetRenderer.SetPropertyBlock(propBlock);
     }
 
     // [추가] 몬스터가 공격했을 때 플레이어에게 피격 이펙트 생성

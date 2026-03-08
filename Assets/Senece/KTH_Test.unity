@@ -623,16 +623,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8737c56f851dad94daa4133eb85a4cf3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyVisuals
-  hitMaterial: {fileID: 2100000, guid: 212c7d248e1132f4c8b3088415e5fc63, type: 2}
+  flashDuration: 0.1
+  enemyhitFlashIntensity: 2
   warningMaterial: {fileID: 0}
   shieldMeshFX: {fileID: 2060120364}
   shieldShowDuration: 0.25
   shieldImpactScaleMultiplier: {x: 1, y: 1, z: 1}
   shieldOffset: {x: 0, y: 1, z: 0}
   shieldRotationSpeed: 50
-  shieldParticlePrefab: {fileID: 264206302}
-  hitFlashIntensity: 2
+  shueldhitFlashIntensity: 2
   shieldColor: {r: 1, g: 0.9, b: 0.4, a: 1}
+  shieldParticlePrefab: {fileID: 264206302}
 --- !u!114 &479912996
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1099,16 +1100,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8737c56f851dad94daa4133eb85a4cf3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyVisuals
-  hitMaterial: {fileID: 2100000, guid: 212c7d248e1132f4c8b3088415e5fc63, type: 2}
+  flashDuration: 0.1
+  enemyhitFlashIntensity: 2
   warningMaterial: {fileID: 0}
   shieldMeshFX: {fileID: 2070566286}
   shieldShowDuration: 0.25
   shieldImpactScaleMultiplier: {x: 1, y: 1, z: 1}
   shieldOffset: {x: 0, y: 1, z: 0}
   shieldRotationSpeed: 50
-  shieldParticlePrefab: {fileID: 1897736846}
-  hitFlashIntensity: 2
+  shueldhitFlashIntensity: 2
   shieldColor: {r: 1, g: 0.9, b: 0.4, a: 1}
+  shieldParticlePrefab: {fileID: 1897736846}
 --- !u!114 &677412787
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2117,7 +2119,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9102089459880986193, guid: 999c9df1ae9ff0641a8369f4be6b7ed5, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9102089459880986193, guid: 999c9df1ae9ff0641a8369f4be6b7ed5, type: 3}
       propertyPath: m_TagString
@@ -2187,16 +2189,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8737c56f851dad94daa4133eb85a4cf3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyVisuals
-  hitMaterial: {fileID: 2100000, guid: 212c7d248e1132f4c8b3088415e5fc63, type: 2}
+  flashDuration: 0.08
+  enemyhitFlashIntensity: 2
   warningMaterial: {fileID: 0}
   shieldMeshFX: {fileID: 1757384114}
   shieldShowDuration: 0.25
   shieldImpactScaleMultiplier: {x: 1, y: 1, z: 1}
   shieldOffset: {x: 0, y: 1, z: 0}
   shieldRotationSpeed: 50
-  shieldParticlePrefab: {fileID: 1959962267}
-  hitFlashIntensity: 2
+  shueldhitFlashIntensity: 2
   shieldColor: {r: 1, g: 0.9, b: 0.4, a: 1}
+  shieldParticlePrefab: {fileID: 1959962267}
 --- !u!114 &1355840314
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2498,7 +2501,7 @@ Transform:
   m_GameObject: {fileID: 1642911472}
   serializedVersion: 2
   m_LocalRotation: {x: 0.35355338, y: 0.35355338, z: -0.1464466, w: 0.8535535}
-  m_LocalPosition: {x: -8.637088, y: 12, z: -8.159632}
+  m_LocalPosition: {x: -8.648731, y: 12, z: -8.189584}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2652,7 +2655,7 @@ Transform:
   m_GameObject: {fileID: 1693825651}
   serializedVersion: 2
   m_LocalRotation: {x: 0.35355338, y: 0.35355338, z: -0.1464466, w: 0.8535535}
-  m_LocalPosition: {x: -8.637123, y: 12, z: -8.159685}
+  m_LocalPosition: {x: -8.648734, y: 12, z: -8.189589}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
