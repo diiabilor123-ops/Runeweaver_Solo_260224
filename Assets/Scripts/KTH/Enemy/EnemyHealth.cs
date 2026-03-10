@@ -51,7 +51,7 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         if (shield != null)
         {
             // 쉴드가 데미지를 흡수하는 로직 (기존 hitData.damage 활용)
-            float remainingDamage = shield.AbsorbDamage(finalDamage);
+            float remainingDamage = shield.AbsorbDamage(finalDamage, hitData.hitPoint);
 
             // 쉴드에 막힌 데미지 팝업 (파란색)
             float shieldedAmount = hitData.damage - remainingDamage;

@@ -2,9 +2,6 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
-/// <summary>
-/// 보스 AI 지휘관 클래스: 전체적인 상태 제어와 패턴 실행을 관리합니다.
-/// </summary>
 public class BossBrain : EnemyBrain
 {
     // [ 1. 상태 및 상수 정의 ]
@@ -23,6 +20,7 @@ public class BossBrain : EnemyBrain
     // [ 3. 컴포넌트 참조 ]
     private Animator animator;
     private EnemySword sword;
+    private EnemyTeleport teleport; // [추가] 순간이동 모듈 참조
     private bool isPatternRunning = false;
     private bool lastAttackHitSuccess = false;
 
@@ -30,11 +28,15 @@ public class BossBrain : EnemyBrain
     public bool LastAttackHitSuccess => lastAttackHitSuccess;
     public new Transform player => base.player;
     public new EnemyMover mover => base.mover;
+    public EnemyTeleport Teleport => teleport; // [추가] 외부에서 접근 가능하도록 프로퍼티 제공
+
+    public EnemyVisuals enemyVisuals => base.visuals;
 
     protected override void Awake()
     {
         base.Awake();
         animator = GetComponent<Animator>();
+        teleport = GetComponent<EnemyTeleport>(); // [추가]
         sword = GetComponentInChildren<EnemySword>();
         if (sword != null) sword.Init(this, data);
     }
@@ -67,17 +69,14 @@ public class BossBrain : EnemyBrain
 
             float distance = Vector3.Distance(transform.position, player.position);
 
-            // [핵심 수정] 패턴 실행 중에는 이 블록 자체가 실행되지 않아야 합니다.
             if (!isPatternRunning)
             {
                 if (distance < 10f && randomPatterns.Count > 0)
                 {
-                    // 패턴 실행 명령
                     yield return StartCoroutine(ExecuteNextPattern());
                 }
                 else
                 {
-                    // 추격 상태
                     mover.MoveTo(player.position);
                     animator.SetFloat(HashMoveSpeed, 0.5f);
                 }
@@ -98,43 +97,44 @@ public class BossBrain : EnemyBrain
         BossPattern selectedPattern = patternPool[randomIndex];
         patternPool.RemoveAt(randomIndex);
 
-        // 1. 실제 패턴 실행
         yield return StartCoroutine(selectedPattern.Execute(this));
 
-        // 2. 패턴이 끝났으니 강제로 정지 상태 유지
         mover.Stop();
         animator.SetFloat(HashMoveSpeed, 0f);
 
-        // 3. 쿨타임 대기 (이 기간 동안은 보스가 가만히 서있음)
         float cooldown = data.attackCooldown > 0 ? data.attackCooldown : 0.5f;
         yield return new WaitForSeconds(cooldown);
 
-        // [핵심 추가] 다시 걷기 직전, 블렌드 트리의 게이지를 0으로 리셋하며 부드럽게 전환
-        // "Locomotion"은 블렌드 트리가 들어있는 상태의 이름입니다.
         animator.CrossFadeInFixedTime("Locomotion", 0.2f, 0, 0f);
 
-        isPatternRunning = false; // 이제 추격 로직이 돌면서 MoveSpeed를 올립니다.
+        isPatternRunning = false;
         currentState = State.Chase;
     }
 
-    // 인터페이스 동기화 (EnemyMover의 함수와 매칭)
-    public void Warp(Vector3 pos) => mover.Teleport(pos);
+    // [위치 계산 헬퍼 함수] 플레이어 뒤쪽 위치 계산
+    public Vector3 GetBehindPlayerPos(float dist)
+    {
+        if (player == null) return transform.position;
+        return player.position - (player.forward * dist);
+    }
 
+    // 인터페이스 동기화
+    public void Warp(Vector3 pos) => mover.Teleport(pos);
     public void SetRotationUpdate(bool update) => mover.SetRotationUpdate(update);
 
+    // BossBrain.cs 내부의 해당 함수만 교체하세요
     public Vector3 GetValidNavMeshPos(Vector3 targetPos)
     {
         UnityEngine.AI.NavMeshHit hit;
-        if (UnityEngine.AI.NavMesh.SamplePosition(targetPos, out hit, 2.0f, UnityEngine.AI.NavMesh.AllAreas))
+        // 처음 잘 되던 3.0f 반경으로 복구
+        if (UnityEngine.AI.NavMesh.SamplePosition(targetPos, out hit, 3.0f, UnityEngine.AI.NavMesh.AllAreas))
         {
             return hit.position;
         }
         return targetPos;
     }
 
-    // [ 7. 패턴 SO를 위한 외부 인터페이스 ]
     public void ReportAttackHit(bool success) => lastAttackHitSuccess = success;
     public void ResetAttackResult() => lastAttackHitSuccess = false;
     public void ToggleSword(bool active) => sword?.ToggleCollider(active);
-    public void PlayTeleportEffect() => visuals.PlayHitFlash();
 }

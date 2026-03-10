@@ -2,249 +2,120 @@
 using System.Collections;
 
 /// <summary>
-/// [몬스터 시각 효과 및 연출]
-/// Hit Flash(번쩍임), 애니메이션 제어, 파티클 생성을 담당합니다.
+/// [공통 몬스터 비주얼] 모든 몬스터의 피격 번쩍임, 애니메이션, 시각 효과를 담당합니다.
 /// </summary>
 public class EnemyVisuals : MonoBehaviour
 {
     [Header("Hit Flash (Shader)")]
-    [SerializeField] private float flashDuration = 0.1f; // [해결] 에러 방지용 변수 선언
+    [SerializeField] private float flashDuration = 0.1f;
     [SerializeField] private float enemyhitFlashIntensity = 2.0f;
     private static readonly int HitIntensityID = Shader.PropertyToID("_HitIntensity");
 
-    [Header("WarningMaterials")]
-    [SerializeField] private Material warningMaterial; // 돌진 전 기 모으는 용
+    [Header("Teleport VFX")]
+    [SerializeField] private GameObject teleportStartVFX; // 사라질 때 프리팹
+    [SerializeField] private GameObject teleportEndVFX;   // 나타날 때 프리팹
 
-    [Header("Shield FX")]
-    [SerializeField] private GameObject shieldMeshFX; // 인스펙터에서 FX 메쉬 오브젝트 할당
-    [SerializeField] private float shieldShowDuration = 0.15f; // 표시 시간
-    [SerializeField] private Vector3 shieldImpactScaleMultiplier = new Vector3(1.2f, 1.2f, 1.2f); //[수정] 이제 이 값은 "배수"로 작동합니다
-    [SerializeField] private Vector3 shieldOffset = new Vector3(0, 1.0f, 0); //[추가] 쉴드 위치 오프셋 (예: Y축으로 1만큼 올림)
-    [SerializeField] private float shieldRotationSpeed = 100f; // 회전 속도 추가
-    [SerializeField] private float shueldhitFlashIntensity = 2.0f; // 피격 시 얼마나 밝게 빛날지
-    [SerializeField] private Color shieldColor = new Color(1f, 0.9f, 0.4f); // 쉴드 기본 색상
-
-    [Header("Particles")]
-    [SerializeField] private GameObject shieldParticlePrefab; // [추가] 쉴드용 파티클 프리팹
-
-    private Material originalMaterial;
-    private Renderer targetRenderer;
-    private MaterialPropertyBlock propBlock; // 최적화용 보따리
+    private Renderer[] allRenderers;
+    private MaterialPropertyBlock propBlock;
     private Coroutine flashCoroutine;
-    private Coroutine shieldCoroutine;
     private Animator anim;
-    private Vector3 shieldBaseScale;  // [추가] 인스펙터에서 맞춰둔 쉴드의 원래 크기를 저장할 변수
+    private AfterimageGenerator afterimage;
 
-    // [추가] 현재 쉴드 상태를 저장하는 변수
+    // [추가] 쉴드 여부에 따라 피격 효과를 제어하는 프로퍼티
     public bool HasShield { get; set; } = false;
 
     private void Awake()
     {
-        targetRenderer = GetComponentInChildren<Renderer>();
+        allRenderers = GetComponentsInChildren<Renderer>();
         anim = GetComponent<Animator>();
         propBlock = new MaterialPropertyBlock();
-
-        if (shieldMeshFX != null)
-        {
-            //[추가] 시작할 때 인스펙터에 설정된 크기를 미리 기억해둡니다.
-            shieldBaseScale = shieldMeshFX.transform.localScale;
-            shieldMeshFX.SetActive(false);
-        }
+        afterimage = GetComponent<AfterimageGenerator>();
     }
 
-    private void Update()
-    {
-        // 쉴드 메쉬가 켜져 있을 때만 계속 회전시킵니다.
-        if (shieldMeshFX != null && shieldMeshFX.activeSelf)
-        {
-            shieldMeshFX.transform.Rotate(Vector3.up * shieldRotationSpeed * Time.deltaTime);
-        }
-    }
-
-    private void Start()
-    {
-        if (targetRenderer != null)
-        {
-            // [해결] Start에서 초기화하여 생성 시점 이슈 방지
-            // material을 호출하면 자동으로 인스턴스화됨
-            originalMaterial = targetRenderer.material;
-
-            // 확실하게 초기 Emission은 꺼둠
-            originalMaterial.SetColor("_EmissionColor", Color.black);
-            targetRenderer.material = originalMaterial;
-        }
-    }
-
-    /// <summary>
-    /// 실제 데미지를 받았을 때 호출 (빠른 번쩍임)
-    /// </summary>
+    // 1. 피격 번쩍임 효과
     public void PlayHitFlash()
     {
-        // [수정] 쉴드가 있는 상태면 하얀색 번쩍임을 실행하지 않습니다.
-        if (HasShield) return;
-
+        if (HasShield) return; // 쉴드가 있으면 번쩍임 생략
         if (flashCoroutine != null) StopCoroutine(flashCoroutine);
         flashCoroutine = StartCoroutine(HitFlashRoutine());
     }
 
-    /// <summary>
-    /// 돌진 예고 시 호출 (지속되는 번쩍임)
-    /// </summary>
+    private IEnumerator HitFlashRoutine()
+    {
+        SetAllHitIntensity(enemyhitFlashIntensity);
+        yield return new WaitForSeconds(flashDuration);
+        SetAllHitIntensity(0f);
+        flashCoroutine = null;
+    }
+
+    private void SetAllHitIntensity(float value)
+    {
+        if (allRenderers == null) return;
+        foreach (var ren in allRenderers)
+        {
+            if (ren == null) continue;
+            ren.GetPropertyBlock(propBlock);
+            propBlock.SetFloat(HitIntensityID, value);
+            ren.SetPropertyBlock(propBlock);
+        }
+    }
+
+    // 2. [에러 해결] 피격 애니메이션 실행 함수 복구
+    public void PlayHitAnimation()
+    {
+        if (anim != null)
+        {
+            // 현재 애니메이터에 Hit 트리거가 있다면 실행 (없으면 주석 유지)
+            // anim.SetTrigger("Hit"); 
+        }
+    }
+
+    // 3. [에러 해결] 경고 신호(돌진 전 등) 실행 함수 복구
     public void PlayWarningSignal()
     {
         if (flashCoroutine != null) StopCoroutine(flashCoroutine);
-        // 예고 시간(data.attackWarningTime) 동안 지속되도록 하거나 고정값 적용
         flashCoroutine = StartCoroutine(WarningRoutine());
     }
 
     private IEnumerator WarningRoutine()
     {
-        // 공격 예고 시에는 모델을 흔들지 않고, 단순히 붉은 기운만 감돌게 예시를 듭니다.
-        // (쉐이더에 _WarningColor 같은 변수를 추가해서 조절하는 것이 좋습니다)
-        // 지금은 임시로 기존 기능을 쓰되 '피격'처럼 보이지 않게 처리하세요.
+        Debug.Log("보스 경고 신호 시작");
+        // 필요 시 여기서 몸을 붉게 만들거나 소리를 재생하는 로직을 넣습니다.
         yield return new WaitForSeconds(0.5f);
         flashCoroutine = null;
     }
 
-    /// <summary>
-    /// [추가] 쉴드 피격 시 호출되는 연출 (파티클 재생 등)
-    /// </summary>
-    public void PlayShieldEffect(Vector3 hitPoint)
-    {
-        // 1. 파티클에 타격감을 몰아줍니다.
-        if (shieldParticlePrefab != null)
-        {
-            GameObject particleObj = Instantiate(shieldParticlePrefab, transform);
-            particleObj.transform.localPosition = hitPoint + shieldOffset;
-
-            // 핵심: 생성된 객체를 활성화하고 파티클을 명시적으로 재생
-            particleObj.SetActive(true);
-            // 수정: Transform 스케일은 프리팹 그대로(보통 1,1,1) 둡니다.
-            particleObj.transform.localScale = shieldParticlePrefab.transform.localScale;
-
-            // 대신 파티클 시스템의 '시작 크기'에 배율을 곱해줍니다.
-            ParticleSystem ps = particleObj.GetComponent<ParticleSystem>();
-            if (ps != null)
-            {
-                var main = ps.main;
-                // shieldImpactScaleMultiplier.x 값을 배율로 활용
-                main.startSizeMultiplier *= shieldImpactScaleMultiplier.x;
-
-                ps.Play(); // 확실하게 재생 시작
-            }
-
-            // 일정 시간 후 삭제 (안 하면 맵에 프리팹 복사본이 계속 쌓입니다)
-            Destroy(particleObj, ps != null ? ps.main.duration + ps.main.startLifetime.constantMax : 1f);
-        }
-
-        // 2. 메쉬 FX 애니메이션 (스케일 변화 대신 회전은 Update에서 수행, 여기선 활성화만)
-        if (shieldMeshFX != null)
-        {
-            if (shieldCoroutine != null) StopCoroutine(shieldCoroutine);
-            shieldCoroutine = StartCoroutine(ShieldVisibleRoutine());
-        }
-    }
-
-    // 스케일 변화 없이 일정 시간 보여주기만 하는 루틴으로 변경
-    private IEnumerator ShieldVisibleRoutine()
-    {
-        if (shieldMeshFX == null) yield break;
-
-        // 1. 초기 설정
-        shieldMeshFX.transform.localPosition = shieldOffset;
-        shieldMeshFX.SetActive(true);
-
-        // 쉴드 전용 머티리얼 제어 (Emission 활용)
-        Renderer shieldRenderer = shieldMeshFX.GetComponent<Renderer>();
-        Material shieldMat = shieldRenderer.material;
-
-        float elapsed = 0f;
-        // 하데스 스타일: 순간적으로 빠르게 돌았다가 멈춤 (가속도)
-        float boostRotation = shieldRotationSpeed * 3f;
-
-        while (elapsed < shieldShowDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / shieldShowDuration;
-
-            // 연출 팁 1: 회전 속도 감쇠 (점점 느려짐)
-            float currentRotation = Mathf.Lerp(boostRotation, shieldRotationSpeed, t);
-            shieldMeshFX.transform.Rotate(Vector3.up * currentRotation * Time.deltaTime);
-
-            // 연출 팁 2: 밝기 조절 (피격 순간 반짝였다가 어두워짐)
-            // "_EmissionColor"는 표준 HDR 머티리얼에서 빛나는 색상을 조절합니다.
-            float intensity = Mathf.Lerp(shueldhitFlashIntensity, 0f, t);
-            shieldMat.SetColor("_EmissionColor", shieldColor * intensity);
-
-            // 연출 팁 3: 스케일 미세 변화 (살짝 수축되는 느낌)
-            shieldMeshFX.transform.localScale = Vector3.Lerp(shieldBaseScale * 1.1f, shieldBaseScale, t);
-
-            yield return null;
-        }
-
-        // 마무리
-        shieldMeshFX.SetActive(false);
-    }
-
-    // --- [추가] 피격 애니메이션 트리거 ---
-    public void PlayHitAnimation()
-    {
-        if (anim != null)
-        {
-            // Animator Controller에서 "Hit" Trigger가 설정되어 있어야 합니다.
-            //anim.SetTrigger("Hit");
-        }
-    }
-
-    private IEnumerator HitFlashRoutine()
-    {
-        if (targetRenderer == null) yield break;
-
-        // 1. 몬스터의 원래 모델 위치 기억 (진동 후 돌아오기 위해)
-        Vector3 originalPos = transform.localPosition;
-
-        // 2. 번쩍임 시작 (1보다 높게 주면 더 눈부시게 빛납니다)
-        SetHitIntensity(enemyhitFlashIntensity);
-
-        float elapsed = 0f;
-        while (elapsed < flashDuration)
-        {
-            elapsed += Time.deltaTime;
-
-            // [핵심] 로아식 우찔거림: 모델을 아주 미세하게 랜덤 좌표로 흔듭니다.
-            // FeedbackManager의 카메라 흔들림과 시너지를 내서 타격감이 폭발합니다.
-            transform.localPosition = originalPos + (Vector3)UnityEngine.Random.insideUnitCircle * 0.1f;
-
-            yield return null;
-        }
-
-        // 3. 복구
-        transform.localPosition = originalPos;
-        SetHitIntensity(0f);
-        flashCoroutine = null;
-    }
-
-    // [해결] 에러가 났던 SetHitIntensity 함수 추가
-    private void SetHitIntensity(float value)
-    {
-        if (targetRenderer == null) return;
-        targetRenderer.GetPropertyBlock(propBlock);
-        propBlock.SetFloat(HitIntensityID, value);
-        targetRenderer.SetPropertyBlock(propBlock);
-    }
-
-    // [추가] 몬스터가 공격했을 때 플레이어에게 피격 이펙트 생성
+    // 4. 타격 이펙트 생성
     public void PlayAttackHitVisual(HitData hitData)
     {
         if (hitData.hitEffectPrefab != null)
-        {
             Instantiate(hitData.hitEffectPrefab, hitData.hitPoint, Quaternion.identity);
-            Debug.Log("플레이어 피격 이펙트 생성!");
-        }
-        else
+    }
+
+    // 5. 순간이동 시각 효과 (기존 구조 유지)
+    public void PlayTeleportStartVFX()
+    {
+        if (teleportStartVFX != null)
         {
-            Debug.LogWarning("피격 이펙트 프리팹이 설정되지 않았습니다.");
+            Quaternion rotation = Quaternion.Euler(-90f, 0, 0);
+            Instantiate(teleportStartVFX, transform.position, rotation);
         }
     }
 
+    public void PlayTeleportEndVFX()
+    {
+        if (teleportEndVFX != null)
+        {
+            Vector3 spawnPos = transform.position + Vector3.up * 0.1f;
+            Instantiate(teleportEndVFX, spawnPos, Quaternion.identity);
+        }
+    }
+
+    // 6. 잔상 제어
+    public void ToggleAfterimage(bool active)
+    {
+        if (afterimage == null) return;
+        if (active) afterimage.StartAfterimage();
+        else afterimage.StopAfterimage();
+    }
 }

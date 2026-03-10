@@ -117,4 +117,6 @@ public class BoarBrain : EnemyBrain
         if (dir != Vector3.zero)
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), 10f * Time.deltaTime);
     }
+
+
 }

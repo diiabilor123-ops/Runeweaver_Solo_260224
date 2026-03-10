@@ -16,4 +16,5 @@ MonoBehaviour:
   walkTime: 1.5
   strafeDistance: 3.5
   teleportDist: 2
-  waitBeforeSlash: 0.2
+  waitBeforeSlash: 0.05
+  attackSpeedMultiplier: 2

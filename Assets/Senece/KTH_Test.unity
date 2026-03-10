@@ -338,15 +338,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyVisuals
   flashDuration: 0.1
   enemyhitFlashIntensity: 2
-  warningMaterial: {fileID: 0}
-  shieldMeshFX: {fileID: 0}
-  shieldShowDuration: 0.15
-  shieldImpactScaleMultiplier: {x: 1.2, y: 1.2, z: 1.2}
-  shieldOffset: {x: 0, y: 1, z: 0}
-  shieldRotationSpeed: 100
-  shueldhitFlashIntensity: 2
-  shieldColor: {r: 1, g: 0.9, b: 0.4, a: 1}
-  shieldParticlePrefab: {fileID: 0}
+  teleportStartVFX: {fileID: 180820, guid: 5b7408223c94710458da5574bf75a7d2, type: 3}
+  teleportEndVFX: {fileID: 1684764806622204, guid: 1775c0d000103884eaf9fe4596c61884, type: 3}
 --- !u!114 &194256666
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -457,6 +450,33 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &194256672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 194256661}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b12e3214f4bba5545a0d329fe4d2b8b9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AfterimageGenerator
+  ghostMaterial: {fileID: 2100000, guid: 67ca442196be45f43b46492325aace40, type: 2}
+  ghostDuration: 0.5
+  spawnInterval: 0.5
+--- !u!114 &194256673
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 194256661}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: adbae53540c75e04ba82b52e04e8c372, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyTeleport
 --- !u!1 &264206302 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1834282789868880830, guid: 999c9df1ae9ff0641a8369f4be6b7ed5, type: 3}
@@ -740,6 +760,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyShield
   maxShield: 50
+  shieldMeshFX: {fileID: 2060120364}
+  shieldShowDuration: 0.15
+  shieldImpactScaleMultiplier: {x: 1.2, y: 1.2, z: 1.2}
+  shieldOffset: {x: 0, y: 1, z: 0}
+  shieldRotationSpeed: 100
+  shieldHitFlashIntensity: 2
+  shieldColor: {r: 1, g: 0.9, b: 0.4, a: 1}
+  shieldParticlePrefab: {fileID: 264206302}
 --- !u!114 &479912991
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -839,15 +867,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyVisuals
   flashDuration: 0.1
   enemyhitFlashIntensity: 2
-  warningMaterial: {fileID: 0}
-  shieldMeshFX: {fileID: 2060120364}
-  shieldShowDuration: 0.25
-  shieldImpactScaleMultiplier: {x: 1, y: 1, z: 1}
-  shieldOffset: {x: 0, y: 1, z: 0}
-  shieldRotationSpeed: 50
-  shueldhitFlashIntensity: 2
-  shieldColor: {r: 1, g: 0.9, b: 0.4, a: 1}
-  shieldParticlePrefab: {fileID: 264206302}
+  teleportStartVFX: {fileID: 0}
+  teleportEndVFX: {fileID: 0}
 --- !u!114 &479912996
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1217,6 +1238,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyShield
   maxShield: 50
+  shieldMeshFX: {fileID: 2070566286}
+  shieldShowDuration: 0.15
+  shieldImpactScaleMultiplier: {x: 1.2, y: 1.2, z: 1.2}
+  shieldOffset: {x: 0, y: 1, z: 0}
+  shieldRotationSpeed: 100
+  shieldHitFlashIntensity: 2
+  shieldColor: {r: 1, g: 0.9, b: 0.4, a: 1}
+  shieldParticlePrefab: {fileID: 1897736846}
 --- !u!114 &677412782
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1316,15 +1345,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyVisuals
   flashDuration: 0.1
   enemyhitFlashIntensity: 2
-  warningMaterial: {fileID: 0}
-  shieldMeshFX: {fileID: 2070566286}
-  shieldShowDuration: 0.25
-  shieldImpactScaleMultiplier: {x: 1, y: 1, z: 1}
-  shieldOffset: {x: 0, y: 1, z: 0}
-  shieldRotationSpeed: 50
-  shueldhitFlashIntensity: 2
-  shieldColor: {r: 1, g: 0.9, b: 0.4, a: 1}
-  shieldParticlePrefab: {fileID: 1897736846}
+  teleportStartVFX: {fileID: 0}
+  teleportEndVFX: {fileID: 0}
 --- !u!114 &677412787
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1690,15 +1712,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5756897796216587441, guid: 33b6a469062c44a48a4bbdbfa3e1e9f0, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.000000031358415
+      value: 0.000000031358418
       objectReference: {fileID: 0}
     - target: {fileID: 5756897796216587441, guid: 33b6a469062c44a48a4bbdbfa3e1e9f0, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.1092674
+      value: 1.1092675
       objectReference: {fileID: 0}
     - target: {fileID: 5756897796216587441, guid: 33b6a469062c44a48a4bbdbfa3e1e9f0, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.18259607
+      value: -0.18259609
       objectReference: {fileID: 0}
     - target: {fileID: 5991292675200204816, guid: 33b6a469062c44a48a4bbdbfa3e1e9f0, type: 3}
       propertyPath: m_Controller
@@ -1726,11 +1748,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8365480381944553458, guid: 33b6a469062c44a48a4bbdbfa3e1e9f0, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.3615572
+      value: 1.3615574
       objectReference: {fileID: 0}
     - target: {fileID: 8365480381944553458, guid: 33b6a469062c44a48a4bbdbfa3e1e9f0, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.13750564
+      value: -0.13750565
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2410,15 +2432,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyVisuals
   flashDuration: 0.08
   enemyhitFlashIntensity: 2
-  warningMaterial: {fileID: 0}
-  shieldMeshFX: {fileID: 1757384114}
-  shieldShowDuration: 0.25
-  shieldImpactScaleMultiplier: {x: 1, y: 1, z: 1}
-  shieldOffset: {x: 0, y: 1, z: 0}
-  shieldRotationSpeed: 50
-  shueldhitFlashIntensity: 2
-  shieldColor: {r: 1, g: 0.9, b: 0.4, a: 1}
-  shieldParticlePrefab: {fileID: 1959962267}
+  teleportStartVFX: {fileID: 0}
+  teleportEndVFX: {fileID: 0}
 --- !u!114 &1355840314
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2551,6 +2566,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyShield
   maxShield: 50
+  shieldMeshFX: {fileID: 1757384114}
+  shieldShowDuration: 0.15
+  shieldImpactScaleMultiplier: {x: 1.2, y: 1.2, z: 1.2}
+  shieldOffset: {x: 0, y: 1, z: 0}
+  shieldRotationSpeed: 100
+  shieldHitFlashIntensity: 2
+  shieldColor: {r: 1, g: 0.9, b: 0.4, a: 1}
+  shieldParticlePrefab: {fileID: 1959962267}
 --- !u!4 &1545926219 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7272847934316271958, guid: 33b6a469062c44a48a4bbdbfa3e1e9f0, type: 3}
@@ -2720,7 +2743,7 @@ Transform:
   m_GameObject: {fileID: 1642911472}
   serializedVersion: 2
   m_LocalRotation: {x: 0.35355338, y: 0.35355338, z: -0.1464466, w: 0.8535535}
-  m_LocalPosition: {x: -8.749243, y: 12, z: -8.221713}
+  m_LocalPosition: {x: -8.706491, y: 12, z: -8.197995}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2874,7 +2897,7 @@ Transform:
   m_GameObject: {fileID: 1693825651}
   serializedVersion: 2
   m_LocalRotation: {x: 0.35355338, y: 0.35355338, z: -0.1464466, w: 0.8535535}
-  m_LocalPosition: {x: -8.749243, y: 12, z: -8.221713}
+  m_LocalPosition: {x: -8.706491, y: 12, z: -8.197995}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3275,6 +3298,10 @@ PrefabInstance:
       value: BossKnight
       objectReference: {fileID: 0}
     - target: {fileID: 1927186500216150043, guid: 0186165c7862b8442947ca7c23d3f38a, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1927186500216150043, guid: 0186165c7862b8442947ca7c23d3f38a, type: 3}
       propertyPath: m_TagString
       value: Monster
       objectReference: {fileID: 0}
@@ -3368,6 +3395,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1927186500216150043, guid: 0186165c7862b8442947ca7c23d3f38a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 194256671}
+    - targetCorrespondingSourceObject: {fileID: 1927186500216150043, guid: 0186165c7862b8442947ca7c23d3f38a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 194256673}
+    - targetCorrespondingSourceObject: {fileID: 1927186500216150043, guid: 0186165c7862b8442947ca7c23d3f38a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 194256672}
   m_SourcePrefab: {fileID: 100100000, guid: 0186165c7862b8442947ca7c23d3f38a, type: 3}
 --- !u!1 &1996231682
 GameObject:
