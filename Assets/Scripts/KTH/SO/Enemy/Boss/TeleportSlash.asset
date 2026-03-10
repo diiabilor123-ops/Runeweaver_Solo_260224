@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: TeleportSlash
   m_EditorClassIdentifier: Assembly-CSharp::TeleportSlashPattern
   patternName: TeleportSlash
+  slashAttackSound: {fileID: 11400000, guid: 20e117db0f0ea9b42bb5a9e80d6da1ee, type: 2}
   walkTime: 1.5
   strafeDistance: 3.5
   teleportDist: 2

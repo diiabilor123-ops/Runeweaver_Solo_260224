@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d4119afefd011c499fe7e30ac9c579b, type: 3}
   m_Name: Sound_Slash Attack Sound
   m_EditorClassIdentifier: Assembly-CSharp::SoundDataSO
-  clip: {fileID: 0}
+  clip: {fileID: 8300000, guid: 33fc8aa602c838f4991925a0bd360a57, type: 3}
   volume: 1
   minPitch: 0.9
   maxPitch: 1.1
