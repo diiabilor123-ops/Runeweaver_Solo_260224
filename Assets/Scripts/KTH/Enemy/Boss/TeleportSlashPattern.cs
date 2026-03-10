@@ -4,6 +4,8 @@ using System.Collections;
 [CreateAssetMenu(fileName = "TeleportSlash", menuName = "Boss/Patterns/TeleportSlash")]
 public class TeleportSlashPattern : BossPattern
 {
+    [SerializeField] private SoundDataSO slashAttackSound; // 휘두르는 소리
+
     public float walkTime = 1.2f;
     public float strafeDistance = 3.5f;
     public float teleportDist = 2.5f;
@@ -47,6 +49,10 @@ public class TeleportSlashPattern : BossPattern
         brain.anim.SetFloat("AttackSpeed", attackSpeedMultiplier);
         brain.ToggleSword(true);
         brain.enemyVisuals.ToggleAfterimage(true); // 공격 휘두를 때 잔상 활성화
+
+        // [사운드 추가] 공격 애니메이션 시작과 동시에 휘두르는 소리 재생
+        if (slashAttackSound != null)
+            SoundManager.Instance.Play(slashAttackSound, brain.transform.position);
 
         // 공격 애니메이션 실행!
         brain.anim.SetTrigger("Boss_Attack_Slash");

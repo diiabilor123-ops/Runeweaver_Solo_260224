@@ -3,6 +3,10 @@ using System.Collections;
 
 public class EnemyTeleport : MonoBehaviour
 {
+    [Header("사운드 설정")]
+    [SerializeField] private SoundDataSO teleportStartSound; // 사라질 때 소리
+    [SerializeField] private SoundDataSO teleportEndSound;   // 나타날 때 소리
+
     private EnemyMover mover;
     private EnemyVisuals visuals;
     private Vector3 originalScale;
@@ -22,6 +26,11 @@ public class EnemyTeleport : MonoBehaviour
         // 1. 현재 위치에서 사라짐 연출
         visuals.PlayTeleportStartVFX();
         visuals.PlayHitFlash();
+
+        // [사운드 추가] 사라지는 소리 재생
+        if (teleportStartSound != null)
+            SoundManager.Instance.Play(teleportStartSound, transform.position);
+
         transform.localScale = Vector3.zero; // 캐릭터 숨기기
 
         // AI 끄기 (이동 중 방해 금지)
@@ -44,6 +53,10 @@ public class EnemyTeleport : MonoBehaviour
 
         // 5. 캐릭터 등장!
         transform.localScale = originalScale;
+
+        // [사운드 추가] 나타나는 소리 재생 (폭발음이나 묵직한 등장음)
+        if (teleportEndSound != null)
+            SoundManager.Instance.Play(teleportEndSound, transform.position);
 
         // 등장 시 묵직한 카메라 진동
         if (FeedbackManager.Instance != null)
