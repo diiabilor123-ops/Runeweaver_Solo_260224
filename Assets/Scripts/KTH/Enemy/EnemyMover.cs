@@ -46,10 +46,20 @@ public class EnemyMover : MonoBehaviour
     public void Teleport(Vector3 targetPos)
     {
         if (agent == null) return;
+
+        // 현재 에이전트가 켜져 있었는지 기억합니다.
+        bool wasEnabled = agent.enabled;
+
         agent.enabled = false;
         transform.position = targetPos;
-        agent.enabled = true;
-        if (agent.isOnNavMesh) agent.Warp(targetPos);
+
+        // 원래 켜져 있었을 때만 다시 켭니다. 
+        // 패턴 중(False 상태)에 호출하면 계속 꺼진 상태를 유지하게 됩니다.
+        if (wasEnabled)
+        {
+            agent.enabled = true;
+            if (agent.isOnNavMesh) agent.Warp(targetPos);
+        }
     }
 
     public void SetRotationUpdate(bool update) // 에러 해결: SetRotationUpdate 추가

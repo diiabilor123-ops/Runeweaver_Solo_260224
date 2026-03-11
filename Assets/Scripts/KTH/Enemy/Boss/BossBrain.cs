@@ -4,56 +4,40 @@ using System.Collections.Generic;
 
 public class BossBrain : EnemyBrain
 {
-    // [ 1. 상태 및 상수 정의 ]
     public enum State { Intro, Chase, Pattern, Die }
     [SerializeField] private State currentState = State.Intro;
 
     private static readonly int HashMoveSpeed = Animator.StringToHash("MoveSpeed");
 
-    // [ 2. 패턴 슬롯 및 데이터 ]
     [Header("패턴 설정")]
     [SerializeField] private BossPattern introPattern;
     [SerializeField] private List<BossPattern> randomPatterns;
+    [SerializeField] private BossPattern circularSlashPattern;
 
     private List<BossPattern> patternPool = new List<BossPattern>();
-
-    // [ 3. 컴포넌트 참조 ]
     private Animator animator;
     private EnemySword sword;
-    private EnemyTeleport teleport; // [추가] 순간이동 모듈 참조
+    private EnemyTeleport teleport;
     private bool isPatternRunning = false;
-    private bool lastAttackHitSuccess = false;
 
     public Animator anim => animator;
-    public bool LastAttackHitSuccess => lastAttackHitSuccess;
     public new Transform player => base.player;
     public new EnemyMover mover => base.mover;
-    public EnemyTeleport Teleport => teleport; // [추가] 외부에서 접근 가능하도록 프로퍼티 제공
-
-    public EnemyVisuals enemyVisuals => base.visuals;
+    public EnemyTeleport Teleport => teleport;
 
     protected override void Awake()
     {
         base.Awake();
         animator = GetComponent<Animator>();
-        teleport = GetComponent<EnemyTeleport>(); // [추가]
+        teleport = GetComponent<EnemyTeleport>();
         sword = GetComponentInChildren<EnemySword>();
         if (sword != null) sword.Init(this, data);
     }
 
-    private void Start()
-    {
-        StartCoroutine(FullBossLoop());
-    }
+    private void Start() => StartCoroutine(FullBossLoop());
 
     protected override void LogicUpdate() { }
 
-    private void OnDisable()
-    {
-        StopAllCoroutines();
-    }
-
-    // [ 5. 보스 메인 로직 루프 ]
     private IEnumerator FullBossLoop()
     {
         if (introPattern != null)
@@ -62,31 +46,15 @@ public class BossBrain : EnemyBrain
             yield return StartCoroutine(introPattern.Execute(this));
         }
 
-        currentState = State.Chase;
         while (!health.IsDead)
         {
             if (player == null) yield break;
 
-            float distance = Vector3.Distance(transform.position, player.position);
-
-            if (!isPatternRunning)
-            {
-                if (distance < 10f && randomPatterns.Count > 0)
-                {
-                    yield return StartCoroutine(ExecuteNextPattern());
-                }
-                else
-                {
-                    mover.MoveTo(player.position);
-                    animator.SetFloat(HashMoveSpeed, 0.5f);
-                }
-            }
-
-            yield return new WaitForSeconds(0.1f);
+            yield return StartCoroutine(ExecuteNextPattern());
+            yield return StartCoroutine(StrategicEngagementRoutine());
         }
     }
 
-    // [ 6. 패턴 실행 관리 ]
     private IEnumerator ExecuteNextPattern()
     {
         isPatternRunning = true;
@@ -98,43 +66,86 @@ public class BossBrain : EnemyBrain
         patternPool.RemoveAt(randomIndex);
 
         yield return StartCoroutine(selectedPattern.Execute(this));
-
-        mover.Stop();
-        animator.SetFloat(HashMoveSpeed, 0f);
-
-        float cooldown = data.attackCooldown > 0 ? data.attackCooldown : 0.5f;
-        yield return new WaitForSeconds(cooldown);
-
-        animator.CrossFadeInFixedTime("Locomotion", 0.2f, 0, 0f);
-
         isPatternRunning = false;
-        currentState = State.Chase;
     }
 
-    // [위치 계산 헬퍼 함수] 플레이어 뒤쪽 위치 계산
-    public Vector3 GetBehindPlayerPos(float dist)
+    private IEnumerator StrategicEngagementRoutine()
     {
-        if (player == null) return transform.position;
-        return player.position - (player.forward * dist);
+        currentState = State.Chase;
+        float duration = Random.Range(0.8f, 1.2f);
+        float timer = 0;
+
+        float dist = Vector3.Distance(transform.position, player.position);
+
+        if (dist < 4.0f) // 가까우면 제자리 주시
+        {
+            anim.SetFloat(HashMoveSpeed, 0f);
+            mover.SetAgentActive(false);
+            while (timer < duration)
+            {
+                timer += Time.deltaTime;
+                FaceTarget(player.position, 15f); // 제자리에선 유저 주시
+                yield return null;
+            }
+        }
+        else // 멀면 이동 방향을 바라보며 앞으로 걷기
+        {
+            mover.SetAgentActive(true);
+            anim.SetFloat(HashMoveSpeed, 0.4f);
+            while (timer < duration)
+            {
+                timer += Time.deltaTime;
+                Vector3 targetDir = (player.position - transform.position).normalized;
+                Vector3 sideDir = Vector3.Cross(Vector3.up, targetDir);
+                Vector3 dest = player.position - targetDir * 4f + sideDir * 1.5f;
+                mover.MoveTo(dest);
+
+                // [수정] 이동 방향(목적지)을 바라보게 하여 자연스럽게 앞으로 걷게 함
+                Vector3 moveDir = (dest - transform.position).normalized;
+                if (moveDir != Vector3.zero)
+                    transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(moveDir), Time.deltaTime * 6f);
+                yield return null;
+            }
+        }
     }
 
-    // 인터페이스 동기화
-    public void Warp(Vector3 pos) => mover.Teleport(pos);
-    public void SetRotationUpdate(bool update) => mover.SetRotationUpdate(update);
+    public IEnumerator LookAtPlayerRoutine(float duration)
+    {
+        anim.SetFloat(HashMoveSpeed, 0f);
+        float timer = 0;
+        while (timer < duration)
+        {
+            timer += Time.deltaTime;
+            FaceTarget(player.position, 20f);
+            yield return null;
+        }
+    }
 
-    // BossBrain.cs 내부의 해당 함수만 교체하세요
-    public Vector3 GetValidNavMeshPos(Vector3 targetPos)
+    public void FaceTarget(Vector3 target, float speed = 5f) // 기본 속도를 낮춰서 묵직하게
+    {
+        Vector3 dir = (target - transform.position).normalized;
+        dir.y = 0;
+
+        if (dir != Vector3.zero)
+        {
+            // Slerp의 수치를 조절하여 '획획' 돌아가는 것을 '스으윽' 돌아가게 변경
+            Quaternion targetRot = Quaternion.LookRotation(dir);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * speed);
+        }
+    }
+
+    public IEnumerator ExecuteCircularSlash()
+    {
+        if (circularSlashPattern != null) yield return StartCoroutine(circularSlashPattern.Execute(this));
+    }
+
+    public void ToggleSword(bool active) => sword?.ToggleCollider(active);
+    public void ReportAttackHit(bool success) { }
+    public void ResetAttackResult() { }
+    public Vector3 GetBehindPlayerPos(float dist) => player.position - (player.forward * dist);
+    public Vector3 GetValidNavMeshPos(Vector3 pos)
     {
         UnityEngine.AI.NavMeshHit hit;
-        // 처음 잘 되던 3.0f 반경으로 복구
-        if (UnityEngine.AI.NavMesh.SamplePosition(targetPos, out hit, 3.0f, UnityEngine.AI.NavMesh.AllAreas))
-        {
-            return hit.position;
-        }
-        return targetPos;
+        return UnityEngine.AI.NavMesh.SamplePosition(pos, out hit, 3.0f, UnityEngine.AI.NavMesh.AllAreas) ? hit.position : pos;
     }
-
-    public void ReportAttackHit(bool success) => lastAttackHitSuccess = success;
-    public void ResetAttackResult() => lastAttackHitSuccess = false;
-    public void ToggleSword(bool active) => sword?.ToggleCollider(active);
 }

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e9015bc2e1aa48b40aef785031aa73f0
+timeCreated: 1479102731
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 104605
+  packageName: Untitled
+  packageVersion: 1.0
+  assetPath: Assets/FireWing/AnimatorContrller/RightWingAC.controller
+  uploadId: 211393

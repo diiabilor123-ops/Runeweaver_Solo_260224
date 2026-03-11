@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e28666c6487bc74ab2227297bd231bc, type: 3}
+  m_Name: TeleportBackSlam
+  m_EditorClassIdentifier: Assembly-CSharp::TeleportBackStepSlamPattern
+  patternName: TeleportBackSlam
+  backWalkDuration: 1.5
+  backWalkDistance: 2.5
+  telegraphTime: 0.5
+  leapDistance: 6
+  attackRadius: 3.5
+  smashVFX: {fileID: 0}
