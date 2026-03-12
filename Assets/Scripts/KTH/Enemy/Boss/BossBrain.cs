@@ -25,6 +25,8 @@ public class BossBrain : EnemyBrain
     public new EnemyMover mover => base.mover;
     public EnemyTeleport Teleport => teleport;
 
+    private BossPattern currentActivePattern; // 현재 실행 중인 패턴 저장
+
     protected override void Awake()
     {
         base.Awake();
@@ -33,6 +35,7 @@ public class BossBrain : EnemyBrain
         sword = GetComponentInChildren<EnemySword>();
         if (sword != null) sword.Init(this, data);
     }
+
 
     private void Start() => StartCoroutine(FullBossLoop());
 
@@ -65,6 +68,7 @@ public class BossBrain : EnemyBrain
         BossPattern selectedPattern = patternPool[randomIndex];
         patternPool.RemoveAt(randomIndex);
 
+        currentActivePattern = selectedPattern; // [추가] 현재 패턴 기억
         yield return StartCoroutine(selectedPattern.Execute(this));
         isPatternRunning = false;
     }
@@ -139,7 +143,19 @@ public class BossBrain : EnemyBrain
         if (circularSlashPattern != null) yield return StartCoroutine(circularSlashPattern.Execute(this));
     }
 
-    public void ToggleSword(bool active) => sword?.ToggleCollider(active);
+    // BossBrain.cs 내부의 ToggleSword 함수
+
+    public void StopAllAttackCollision()
+    {
+        sword?.AE_DisableAll();
+    }
+
+    // [보완] ToggleSword는 이제 '수동 강제 제어'용으로만 남겨둡니다.
+    public void ToggleSword(bool active)
+    {
+        if (sword != null) sword.ToggleCollider(active);
+    }
+
     public void ReportAttackHit(bool success) { }
     public void ResetAttackResult() { }
     public Vector3 GetBehindPlayerPos(float dist) => player.position - (player.forward * dist);
@@ -148,4 +164,31 @@ public class BossBrain : EnemyBrain
         UnityEngine.AI.NavMeshHit hit;
         return UnityEngine.AI.NavMesh.SamplePosition(pos, out hit, 3.0f, UnityEngine.AI.NavMesh.AllAreas) ? hit.position : pos;
     }
+
+    #region Animation Event Bridge
+    // 애니메이션 창에서 선택할 함수들
+    public void AE_StartNormalSlash() => sword?.AE_StartNormalSlash();
+    public void AE_StartSlamSlash() => sword?.AE_StartSlamSlash();
+    public void AE_EnableCollider() => sword?.AE_EnableCollider();
+    public void AE_DisableAll() => sword?.AE_DisableAll();
+    public void AE_SlamImpact()
+    {
+        // 1. 비주얼 및 사운드 (EnemySword 측)
+        sword?.AE_SlamImpact();
+
+        // 2. 실제 데미지 판정 (현재 실행 중인 패턴 측)
+        if (currentActivePattern is TeleportSlamPattern slamPattern)
+        {
+            slamPattern.OnSlamImpact(this);
+        }
+    }
+    #endregion
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        // 실제 게임에 설정된 slamDamageRadius 값을 시각화
+        Gizmos.DrawWireSphere(transform.position, 3.0f);
+    }
+
 }

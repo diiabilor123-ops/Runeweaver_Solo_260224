@@ -8,27 +8,29 @@ public class EnemySword : MonoBehaviour
     private Collider swordCollider;
     private bool hasHitThisSwing = false;
 
-    [Header("VFX 설정")]
-    [SerializeField] private GameObject slashVFXObject;
+    [Header("VFX Anchor 설정")]
+    // 보스 자식으로 만든 빈 오브젝트들을 각각 할당하세요.
+    [SerializeField] private Transform normalSlashAnchor;
+    [SerializeField] private Transform slamSlashAnchor;
+    [SerializeField] private Transform slamImpactAnchor;
+
+    [Header("VFX 프리팹")]
+    [SerializeField] private GameObject normalSlashPrefab;
+    [SerializeField] private GameObject slamSlashPrefab;
+    [SerializeField] private GameObject teleportSlashPrefab;
     [SerializeField] private GameObject impactVFXPrefab;
 
     [Header("사운드 설정")]
     [SerializeField] private SoundDataSO swingSound;
     [SerializeField] private SoundDataSO hitSound;
 
-    private ParticleSystem slashParticle;
-
+    public Transform SlamSlashAnchor => slamSlashAnchor;
+    public Transform SlamImpactAnchor => slamImpactAnchor; // [이 줄 추가]
     public void Init(BossBrain brain, EnemyData data)
     {
         this.brain = brain;
         this.data = data;
         swordCollider = GetComponent<Collider>();
-
-        if (slashVFXObject != null)
-        {
-            slashParticle = slashVFXObject.GetComponent<ParticleSystem>();
-            slashVFXObject.SetActive(false);
-        }
 
         if (swordCollider != null)
         {
@@ -37,35 +39,53 @@ public class EnemySword : MonoBehaviour
         }
     }
 
-    // --- 애니메이션 이벤트에서 호출할 함수들 ---
 
-    /// <summary>
-    /// 검을 휘두르기 시작하는 시점에 호출 (VFX + 사운드)
-    /// </summary>
-    public void AE_StartSlash()
+
+    public void ToggleCollider(bool active)
     {
-        if (slashVFXObject != null)
+        if (active)
         {
-            // [현대적 기법] 애니메이터의 재생 속도에 맞춰 VFX 속도를 동기화
-            if (slashParticle != null)
-            {
-                var main = slashParticle.main;
-                // 보스 애니메이션이 1.5배속이면 VFX도 1.5배속으로 재생
-                main.simulationSpeed = brain.anim.speed;
-
-                slashVFXObject.SetActive(false);
-                slashVFXObject.SetActive(true);
-                slashParticle.Play();
-            }
+            hasHitThisSwing = false;
+            if (swordCollider != null) swordCollider.enabled = true;
         }
-
-        if (swingSound != null)
-            SoundManager.Instance.Play(swingSound, transform.position);
+        else
+        {
+            AE_DisableAll();
+        }
     }
 
-    /// <summary>
-    /// 실제 공격 판정이 발생하는 시점에 호출 (Collider ON)
-    /// </summary>
+    // --- 애니메이션 이벤트 호출 함수 ---
+
+    public void AE_StartNormalSlash() => SpawnAtAnchor(normalSlashPrefab, normalSlashAnchor);
+    public void AE_StartSlamSlash() => SpawnAtAnchor(slamSlashPrefab, slamSlashAnchor);
+
+    public void AE_SlamImpact()
+    {
+        // 텔레포트 슬래시 전용 프리팹(혹은 슬램 프리팹)을 임팩트 앵커 위치에 소환
+        SpawnAtAnchor(teleportSlashPrefab, slamImpactAnchor);
+    }
+
+    private void SpawnAtAnchor(GameObject prefab, Transform anchor)
+    {
+        if (prefab == null || anchor == null) return;
+
+        // [핵심] 사용자가 미리 잡아둔 Anchor의 위치와 회전값을 그대로 사용하여 생성
+        // 부모를 지정하지 않아야(null) 하데스식 '잔상' 효과가 납니다.
+        GameObject vfx = Instantiate(prefab, anchor.position, anchor.rotation);
+
+        var ps = vfx.GetComponent<ParticleSystem>();
+        if (ps != null)
+        {
+            var main = ps.main;
+            main.simulationSpeed = brain.anim.speed; // 애니메이션 속도 동기화
+            ps.Play();
+        }
+
+        Destroy(vfx, 2f);
+
+        if (swingSound != null) SoundManager.Instance.Play(swingSound, transform.position);
+    }
+
     public void AE_EnableCollider()
     {
         if (swordCollider != null)
@@ -75,57 +95,35 @@ public class EnemySword : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 공격 판정이 끝나는 시점에 호출 (Collider OFF + VFX Stop)
-    /// </summary>
-    public void AE_DisableCollider()
+    public void AE_DisableAll()
     {
         if (swordCollider != null) swordCollider.enabled = false;
-
-        if (slashParticle != null) slashParticle.Stop();
-    }
-
-    // 기존 패턴 로직과의 호환성을 위해 유지 (필요없으면 삭제 가능)
-    public void ToggleCollider(bool active)
-    {
-        if (active) { AE_StartSlash(); AE_EnableCollider(); }
-        else { AE_DisableCollider(); }
     }
 
     private void OnTriggerEnter(Collider other)
     {
         if (hasHitThisSwing || !other.CompareTag("Player")) return;
-
         if (other.TryGetComponent<IDamageable>(out var target))
         {
-            Vector3 hitPoint = other.ClosestPoint(transform.position);
-
             HitData hit = new HitData
             {
                 damage = data.attackDamage,
                 element = data.mainElement,
                 attackerTeam = Team.Enemy,
-                hitPoint = hitPoint,
+                hitPoint = other.ClosestPoint(transform.position),
                 attackerPos = brain.transform.position
             };
-
             target.TakeDamage(hit);
             hasHitThisSwing = true;
             brain.ReportAttackHit(true);
-
-            SpawnImpactVFX(hitPoint);
+            SpawnImpactVFX(hit.hitPoint);
         }
     }
 
     private void SpawnImpactVFX(Vector3 point)
     {
-        if (impactVFXPrefab != null)
-        {
-            GameObject impact = Instantiate(impactVFXPrefab, point, Quaternion.identity);
-            Destroy(impact, 2f);
-        }
-
-        if (hitSound != null)
-            SoundManager.Instance.Play(hitSound, point);
+        if (impactVFXPrefab != null) Destroy(Instantiate(impactVFXPrefab, point, Quaternion.identity), 2f);
+        if (hitSound != null) SoundManager.Instance.Play(hitSound, point);
     }
+
 }

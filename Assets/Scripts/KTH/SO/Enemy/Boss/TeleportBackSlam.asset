@@ -13,9 +13,6 @@ MonoBehaviour:
   m_Name: TeleportBackSlam
   m_EditorClassIdentifier: Assembly-CSharp::TeleportBackStepSlamPattern
   patternName: TeleportBackSlam
-  backWalkDuration: 1.5
-  backWalkDistance: 2.5
-  telegraphTime: 0.5
   leapDistance: 6
-  attackRadius: 3.5
   smashVFX: {fileID: 0}
+  slamDamageRadius: 5
