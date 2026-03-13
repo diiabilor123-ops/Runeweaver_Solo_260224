@@ -191,4 +191,23 @@ public class BossBrain : EnemyBrain
         Gizmos.DrawWireSphere(transform.position, 3.0f);
     }
 
+    // BossBrain.cs 에 아래 내용 추가 및 수정
+    public void PauseAI()
+    {
+        // 1. 현재 실행 중인 모든 코루틴(패턴, 루프 등) 중단
+        StopAllCoroutines();
+        isPatternRunning = false;
+
+        // 2. 이동 중지 및 상태 초기화
+        if (mover != null) mover.SetAgentActive(false);
+        anim.SetFloat("MoveSpeed", 0);
+        ToggleSword(false); // 칼 콜라이더 끄기
+    }
+
+    public void ResumeAI()
+    {
+        // AI 루프 다시 시작
+        StartCoroutine(FullBossLoop());
+    }
+
 }

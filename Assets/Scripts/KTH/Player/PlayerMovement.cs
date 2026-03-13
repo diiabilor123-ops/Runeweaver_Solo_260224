@@ -10,11 +10,11 @@ namespace Runeweaver.Player
     public class PlayerMovement : MonoBehaviour
     {
         [SerializeField] private float acceleration = 10f; // 애니메이션 파라미터 변화 속도
+        [SerializeField] private float animSpeedMultiplier = 0f;// 실제 이동 속도가 빠를수록 애니메이션 재생 속도도 높입니다.
 
-
-        // [추가] 애니메이션 동기화 배율 (발 미끄러짐 방지용)
-        // 실제 이동 속도가 빠를수록 애니메이션 재생 속도도 높입니다.
-        [SerializeField] private float animSpeedMultiplier = 0f;
+        [Header("Ground Check")]
+        [SerializeField] private float checkDistance = 0.5f; // 캐릭터 중심에서 얼마나 앞을 체크할지
+        [SerializeField] private LayerMask groundLayer;      // 타일 레이어 (NavMesh 또는 Environment)
 
         private Animator _anim;
         private float _currentSpeedValue; // 현재 블렌드 트리 파라미터 값
@@ -40,16 +40,19 @@ namespace Runeweaver.Player
                 Quaternion targetRotation = Quaternion.LookRotation(dir);
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * PlayerStats.Instance.rotateSpeed);
 
-                // 2. 이동: 월드 좌표 기준 정직한 이동 (In-Place 애니메이션을 쓰므로 코드가 이동을 전담)
-                transform.position += dir * PlayerStats.Instance.moveSpeed * Time.deltaTime;
-
-                // [핵심 해결책] 
-                // 애니메이터 전체 재생 속도(speed)를 실제 moveSpeed에 비례하게 조절합니다.
-                // 발이 너무 미끄러지면 animSpeedMultiplier 값을 인스펙터에서 조절해보세요.
-                _anim.speed = 1.0f + (PlayerStats.Instance.moveSpeed * animSpeedMultiplier);
-
-                // 3. 애니메이션: 블렌드 트리용 Speed 값을 1(Run)로 서서히 올림
-                UpdateAnimationParameter(dir.magnitude);
+                // [핵심: 바닥 체크] 
+                // 이동하려는 지점(dir 방향으로 checkDistance만큼 앞)의 아래에 바닥이 있는지 확인
+                if (IsGroundAhead(dir))
+                {
+                    transform.position += dir * PlayerStats.Instance.moveSpeed * Time.deltaTime;
+                    _anim.speed = 1.0f + (PlayerStats.Instance.moveSpeed * animSpeedMultiplier);
+                    UpdateAnimationParameter(dir.magnitude);
+                }
+                else
+                {
+                    // 바닥이 없으면 이동하지 않고 Idle로 전환
+                    StopMovementAnimation();
+                }
             }
             // [3] 입력이 없을 때 (Idle)
             else
@@ -59,6 +62,15 @@ namespace Runeweaver.Player
             }
         }
 
+        // 레이캐스트를 이용한 바닥 확인 로직
+        private bool IsGroundAhead(Vector3 dir)
+        {
+            // 캐릭터 발밑보다 살짝 위에서 아래로 쏩니다.
+            Vector3 rayStart = transform.position + (dir * checkDistance) + (Vector3.up * 0.5f);
+
+            // 1.5m 아래까지 레이를 쏴서 groundLayer가 잡히는지 확인
+            return Physics.Raycast(rayStart, Vector3.down, 1.5f, groundLayer);
+        }
 
         /// <summary>
         /// 애니메이션 파라미터를 목표값까지 부드럽게 보정하여 전달 (블렌드 트리용)

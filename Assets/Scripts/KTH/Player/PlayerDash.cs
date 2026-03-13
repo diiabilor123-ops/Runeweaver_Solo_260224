@@ -1,22 +1,19 @@
 using System.Collections;
 using UnityEngine;
-using DG.Tweening; // 쫀득한 연출을 위한 DOTween
+using DG.Tweening;
 
 namespace Runeweaver.Player
 {
-    /// <summary>
-    /// [대시 전용 스크립트]
-    /// 지정된 거리만큼 빠르게 이동하고 쿨타임을 관리합니다.
-    /// In-Place 애니메이션 환경에 맞춰 DOTween으로 위치를 직접 이동시킵니다.
-    /// </summary>
     public class PlayerDash : MonoBehaviour
     {
+        [Header("Settings")]
+        [SerializeField] private DashGhostManager ghostManager;
+        [SerializeField] private float ghostInterval = 0.05f;
+        [SerializeField] private LayerMask groundLayer;
+        [SerializeField] private LayerMask wallLayer; // 벽 레이어 인스펙터에서 설정 필수!
+        [SerializeField] private float stepSize = 0.2f;
 
-        [Header("Ghost Effect")]
-        [SerializeField] private DashGhostManager ghostManager; // 하이어라키의 매니저 연결
-        [SerializeField] private float ghostInterval = 0.05f;    // 잔상 생성 간격
-
-        public bool CanDash { get; private set; } = true; // Controller가 읽어갈 수 있도록 프로퍼티 사용
+        public bool CanDash { get; private set; } = true;
         private PlayerController _controller;
         private Animator _anim;
 
@@ -28,7 +25,6 @@ namespace Runeweaver.Player
 
         public void DoDash(Vector3 inputDir)
         {
-            // 중복 대시 방지 및 쿨타임 체크
             if (CanDash && !_controller.IsDashing)
             {
                 StartCoroutine(DashRoutine(inputDir));
@@ -40,45 +36,51 @@ namespace Runeweaver.Player
             CanDash = false;
             _controller.IsDashing = true;
 
-            // 1. 대시 애니메이션 실행
             if (_anim) _anim.SetTrigger("Dash");
 
-            // 2. 대시 방향 결정: 입력이 있으면 그쪽으로, 없으면 현재 캐릭터 전방으로
             Vector3 dashDirection = inputDir != Vector3.zero ? inputDir : transform.forward;
-
-            // 3. 대시 시작 시 즉시 해당 방향을 바라보게 함
             transform.rotation = Quaternion.LookRotation(dashDirection);
 
-            // [수정] 대시 이동과 동시에 잔상을 뿌리는 코루틴 실행
+            float maxDist = PlayerStats.Instance.dashDistance;
+            Vector3 finalTargetPos = transform.position;
+
+            // [수정] 이동 경로 스캔 시 '벽'이 있으면 즉시 중단
+            for (float d = stepSize; d <= maxDist; d += stepSize)
+            {
+                Vector3 checkPoint = transform.position + (dashDirection * d);
+
+                // 1. 벽 체크 (캐릭터가 지나갈 수 있는지 부피 체크)
+                if (Physics.CheckSphere(checkPoint + Vector3.up * 1f, 0.4f, wallLayer))
+                    break;
+
+                // 2. 바닥 체크
+                if (Physics.Raycast(checkPoint + Vector3.up, Vector3.down, 2f, groundLayer))
+                    finalTargetPos = checkPoint;
+                else
+                    break;
+            }
+
             IEnumerator ghostCoroutine = CreateGhostDuringDash();
             StartCoroutine(ghostCoroutine);
 
-            // 4. DOTween 이동: In-Place 애니메이션이므로 코드가 직접 좌표를 옮깁니다.
-            // Ease.OutQuad는 처음에 빠르고 끝에 살짝 감속되어 타격감이 좋습니다.
-            transform.DOMove(transform.position + dashDirection * PlayerStats.Instance.dashDistance, PlayerStats.Instance.dashDuration);
+            // 보정된 위치로 대시
+            transform.DOMove(finalTargetPos, PlayerStats.Instance.dashDuration).SetEase(Ease.OutQuad);
 
-            // 대시 이동 시간만큼 대기
             yield return new WaitForSeconds(PlayerStats.Instance.dashDuration);
 
-            // 5. 대시 종료 처리
-            // 대시 종료 시 잔상 생성 중지
             StopCoroutine(ghostCoroutine);
             _controller.IsDashing = false;
 
-            // [추가 디테일] 대시가 끝난 직후 애니메이터의 Speed가 이전 값을 기억할 수 있으므로 
-            // 블렌드 트리가 즉시 반응하도록 애니메이터를 리셋하거나 파라미터를 갱신해주는 것이 좋습니다.
             if (_anim) _anim.ResetTrigger("Dash");
-
-            // 6. 쿨타임 대기
             yield return new WaitForSeconds(PlayerStats.Instance.dashCooldown);
             CanDash = true;
         }
 
-        // 대시 지속 시간 동안 일정 간격으로 잔상 생성 요청
         private IEnumerator CreateGhostDuringDash()
         {
             while (true)
             {
+                // 플레이어가 실제로 있는 위치에 잔상 생성
                 if (ghostManager != null) ghostManager.CreateGhost(transform);
                 yield return new WaitForSeconds(ghostInterval);
             }

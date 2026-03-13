@@ -1,58 +1,96 @@
 using UnityEngine;
+using System.Collections.Generic;
 
-/// <summary>
-/// 생성된 잔상이 서서히 투명해지다가 스스로 파괴되게 만드는 스크립트입니다.
-/// </summary>
 public class FadeOutDestroy : MonoBehaviour
 {
-    private Renderer[] _renderers;
+    private GameObject _originPrefab;
+    private List<Material> _cachedMaterials = new List<Material>(); // 머티리얼 캐싱용
+    private List<Mesh> _meshesToDestroy;
     private float _alpha = 1f;
+    private float _fadeSpeed;
+    private bool _isInitialized = false;
 
     [Header("Settings")]
-    public float fadeSpeed = 3f; // 사라지는 속도 (높을수록 빨리 사라짐)
-    public float shrinkSpeed = 0.5f;  // 크기가 줄어드는 속도 (하데스 특유의 소멸감)
+    public float shrinkSpeed = 0.5f;
 
-    private void Awake()
+    // 초기화 시 머티리얼을 단 한 번만 생성/복사합니다.
+    public void Init(GameObject prefab, List<MeshRenderer> renderers, List<Mesh> meshes, float speed)
     {
-        // 자식에 있는 모든 렌더러를 가져옵니다.
-        _renderers = GetComponentsInChildren<Renderer>();
+        _originPrefab = prefab;
+        _meshesToDestroy = meshes;
+        _fadeSpeed = speed;
+
+        // [중요] 모든 상태 초기화
+        _alpha = 1f;
+        _isInitialized = true;
+
+        _cachedMaterials.Clear();
+        foreach (var mr in renderers)
+        {
+            if (mr != null)
+            {
+                // .material에 접근하면 인스턴스가 생성됩니다. 이를 리스트에 저장해둡니다.
+                _cachedMaterials.Add(mr.material);
+            }
+        }
+
+        _isInitialized = true;
     }
 
     private void Update()
     {
-        // 1. 시간에 따라 알파값 감소
-        _alpha -= Time.deltaTime * fadeSpeed;
+        if (!_isInitialized) return;
 
-        // 2. 하데스식 디테일: 크기를 서서히 줄여서 '소멸'하는 느낌 강조
+        _alpha -= Time.deltaTime * _fadeSpeed;
+
+        // 하데스 스타일: 서서히 작아짐
         transform.localScale *= (1f - shrinkSpeed * Time.deltaTime);
 
-
-        // 3. lilToon이나 URP 머티리얼의 컬러를 업데이트
-        // (색상은 유지하고 알파값만 갱신)
-        foreach (var renderer in _renderers)
+        // 저장해둔 머티리얼들의 알파값만 수정 (매 프레임 생성 방지)
+        foreach (var mat in _cachedMaterials)
         {
-            if (renderer != null && renderer.material != null)
-            {
-                Color color = renderer.material.color;
-                color.a = _alpha;
-                renderer.material.color = color;
+            if (mat == null) continue;
 
-                // [하데스 핵심: lilToon 발광(Emission) 조절]
-                // 잔상이 그냥 어두워지는 게 아니라 빛이 사그라드는 느낌을 줍니다.
-                // 셰이더 프로퍼티 이름이 보통 "_EmissionColor"입니다.
-                if (renderer.material.HasProperty("_EmissionColor"))
-                {
-                    Color emissionColor = renderer.material.GetColor("_EmissionColor");
-                    // 알파값에 따라 발광 강도를 함께 낮춥니다.
-                    renderer.material.SetColor("_EmissionColor", emissionColor * (_alpha * _alpha));
-                }
+            Color color = mat.color;
+            color.a = _alpha;
+            mat.color = color;
+
+            if (mat.HasProperty("_EmissionColor"))
+            {
+                Color emColor = mat.GetColor("_EmissionColor");
+                mat.SetColor("_EmissionColor", emColor * (_alpha * _alpha));
             }
         }
 
-        // 3. 완전히 투명해지면 오브젝트 파괴
         if (_alpha <= 0)
         {
-            Destroy(gameObject);
+            ReturnToPool();
+        }
+
+    }
+
+    private void ReturnToPool()
+    {
+        _isInitialized = false;
+
+        // 1. 구워진 메쉬 제거 (메모리 누수 방지)
+        if (_meshesToDestroy != null)
+        {
+            foreach (var mesh in _meshesToDestroy) if (mesh != null) Destroy(mesh);
+            _meshesToDestroy.Clear();
+        }
+
+        // 2. 생성된 머티리얼 복사본 제거 (메모리 누수 방지 핵심!)
+        foreach (var mat in _cachedMaterials) if (mat != null) Destroy(mat);
+        _cachedMaterials.Clear();
+
+        // 3. 자식 오브젝트 정리
+        foreach (Transform child in transform) Destroy(child.gameObject);
+
+        // 4. 풀 반납
+        if (PoolManager.Instance != null && _originPrefab != null)
+        {
+            PoolManager.Instance.Release(_originPrefab, gameObject);
         }
     }
 }

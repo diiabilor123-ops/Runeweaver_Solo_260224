@@ -156,33 +156,44 @@ public class PointGenerator : MonoBehaviour
         }
     }
 
-    private void GenerateNewPoint(int index)
-    {
-        Transform newPoint = Instantiate(pointPrefab,pointsParent).transform;
-        newPoint.name = index.ToString();
-        newPoint.localScale = pointScale * Vector3.one;
-
-        switch(pointDomainType)
+        private void GenerateNewPoint(int index)
         {
-            case PointDomainType.SPHERE:
-                newPoint.localPosition = length0*Random.insideUnitSphere;
-                break;
-            case PointDomainType.CUBE:
-                newPoint.localPosition = new Vector3(Random.Range(-length0,length0),Random.Range(-length1,length1),Random.Range(-length2,length2));
-                break;
-            case PointDomainType.CYLINDER:
-                Vector2 v = length0*Random.insideUnitCircle;
-                float h = Random.Range(-length1,length1);
-                newPoint.localPosition = new Vector3(v.x,h,v.y);
-                break;
-            case PointDomainType.MESH:
-                GenerateNewPointFromGameObject(newPoint);
-                break;
-        }
-        newPoint.localPosition -= pointsParent.position;
-    }
+            // 1. 일단 생성 (부모 설정 포함)
+            Transform newPoint = Instantiate(pointPrefab, pointsParent).transform;
+            newPoint.name = index.ToString();
+            newPoint.localScale = pointScale * Vector3.one;
 
-    private void GenerateNewPointFromGameObject(Transform np)
+            Vector3 offset = Vector3.zero;
+
+            // 2. 오프셋 계산 (부모 스케일에 영향받지 않는 순수 수치)
+            switch (pointDomainType)
+            {
+                case PointDomainType.SPHERE:
+                    offset = length0 * Random.insideUnitSphere;
+                    break;
+                case PointDomainType.CUBE:
+                    offset = new Vector3(
+                        Random.Range(-length0, length0),
+                        Random.Range(-length1, length1),
+                        Random.Range(-length2, length2)
+                    );
+                    break;
+                case PointDomainType.CYLINDER:
+                    Vector2 v = length0 * Random.insideUnitCircle;
+                    float h = Random.Range(-length1, length1);
+                    offset = new Vector3(v.x, h, v.y);
+                    break;
+                case PointDomainType.MESH:
+                    GenerateNewPointFromGameObject(newPoint);
+                    return; // MESH는 내부에서 처리하므로 종료
+            }
+
+            // 3. [핵심] 월드 좌표 위치를 지정하여 부모 스케일 문제를 원천 차단
+            // pointsParent.position(월드좌표)에서 offset만큼 떨어진 '월드 좌표'를 로컬로 변환해서 대입
+            newPoint.position = pointsParent.position + offset;
+        }
+
+        private void GenerateNewPointFromGameObject(Transform np)
     {
         if(dtIsClean)
         {
@@ -214,14 +225,18 @@ public class PointGenerator : MonoBehaviour
         List<IPointLocation> points = dt.points;
         List<int> tetrahedrons = dt.tetrahedrons;
 
-        Vector3 newPoint = Vector3.zero;
-        bool found = false;
+            Vector3 newPointWorld = Vector3.zero;
+            bool found = false;
         while(!found)
         {
-            newPoint = new Vector3(Random.Range(lowerBound.x,upperBound.x),Random.Range(lowerBound.y,upperBound.y),Random.Range(lowerBound.z,upperBound.z));
-            Point3D newPointP = new Point3D(newPoint);
+                newPointWorld = new Vector3(
+                    Random.Range(lowerBound.x, upperBound.x),
+                    Random.Range(lowerBound.y, upperBound.y),
+                    Random.Range(lowerBound.z, upperBound.z)
+                );
+                Point3D newPointP = new Point3D(newPointWorld);
 
-            for(int i=0; i<tetrahedrons.Count; i+=4)
+                for (int i=0; i<tetrahedrons.Count; i+=4)
             {
                 if(-1 == tetrahedrons[i])
                 {
@@ -247,9 +262,12 @@ public class PointGenerator : MonoBehaviour
                 found = true;
                 break;
             }
-        }
-        
-        np.localPosition = newPoint;
+                // [수정] 월드 좌표를 부모 기준의 로컬 좌표로 변환하여 대입합니다.
+                if (pointsParent != null)
+                    np.localPosition = pointsParent.InverseTransformPoint(newPointWorld);
+                else
+                    np.position = newPointWorld;
+            }
     }
 }
 

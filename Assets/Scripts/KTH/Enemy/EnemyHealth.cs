@@ -29,6 +29,8 @@ public class EnemyHealth : MonoBehaviour, IDamageable
         this.agent = GetComponent<NavMeshAgent>(); // 초기화
     }
 
+    public event System.Action<float, float> OnHealthChanged; // (현재 체력, 최대 체력)을 전달
+
     /// <summary>
     /// 외부(플레이어 화살 등)에서 데미지를 줄 때 호출하는 함수
     /// </summary>
@@ -69,6 +71,9 @@ public class EnemyHealth : MonoBehaviour, IDamageable
             // [중요] 이미 화살에서 최종 데미지가 계산되어 왔으므로 비율만 계산합니다.
             float damageRatio = finalDamage / enemyData.maxHp;
             currentHp -= finalDamage;
+
+            // [추가] 체력이 변했음을 구독자들에게 알림
+            OnHealthChanged?.Invoke(currentHp, enemyData.maxHp);
 
             // [해결 1] 크리티컬 여부에 따라 색상 결정 (노란색/흰색)
             Color textColor = finalIsCritical ? Color.yellow : Color.white;
