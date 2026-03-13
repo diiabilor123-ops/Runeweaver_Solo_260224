@@ -83,11 +83,32 @@ public class TileManager : MonoBehaviour
         HashSet<int> activeTiles = new HashSet<int>();
         for (int i = 0; i < tiles.Count; i++)
         {
-            if (tiles[i].activeSelf && i != indexToDestroy) activeTiles.Add(i);
+            // 핵심 수정: 실제로 꺼져있는 타일 뿐만 아니라, 
+            // 이미 파괴 예약된 타일(destroyingIndices)과 현재 테스트 중인 타일도 제외하고 계산합니다.
+            if (tiles[i].activeSelf && i != indexToDestroy && !destroyingIndices.Contains(i))
+            {
+                activeTiles.Add(i);
+            }
         }
+
+        // 만약 중앙 타일(4번) 외에 남은 타일이 없다면 경로를 확인할 필요가 없습니다.
+        if (activeTiles.Count == 0) return true;
+
         Queue<int> queue = new Queue<int>();
         HashSet<int> visited = new HashSet<int>();
-        queue.Enqueue(4); visited.Add(4);
+
+        // 중앙 타일이 활성화되어 있는지 확인 (항상 4번이 기준)
+        if (tiles[4].activeSelf && !destroyingIndices.Contains(4))
+        {
+            queue.Enqueue(4);
+            visited.Add(4);
+        }
+        else
+        {
+            // 만약 중앙 타일마저 부서질 예정이라면 이 로직은 성립하지 않습니다.
+            return false;
+        }
+
         while (queue.Count > 0)
         {
             int current = queue.Dequeue();
@@ -95,10 +116,13 @@ public class TileManager : MonoBehaviour
             {
                 if (activeTiles.Contains(n) && !visited.Contains(n))
                 {
-                    visited.Add(n); queue.Enqueue(n);
+                    visited.Add(n);
+                    queue.Enqueue(n);
                 }
             }
         }
+
+        // 살아남아야 하는 모든 타일이 중앙(4번)으로 연결되는지 확인
         return visited.Count == activeTiles.Count;
     }
 

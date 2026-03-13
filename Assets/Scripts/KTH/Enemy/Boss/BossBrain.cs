@@ -18,7 +18,7 @@ public class BossBrain : EnemyBrain
     private Animator animator;
     private EnemySword sword;
     private EnemyTeleport teleport;
-    private bool isPatternRunning = false;
+    public bool isPatternRunning = false;
 
     public Animator anim => animator;
     public new Transform player => base.player;
