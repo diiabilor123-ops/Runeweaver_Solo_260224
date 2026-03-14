@@ -1,4 +1,5 @@
 using Runeweaver;
+using Runeweaver.Player;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -42,20 +43,18 @@ public class PlayerHealth : MonoBehaviour, IDamageable // 1. 인터페이스 상속 추�
             null
         );
 
-        currentHp -= result.finalDamage;
+        // 2. [핵심 수정] PlayerStats의 체력을 실제로 깎음
+        if (PlayerStats.Instance != null)
+        {
+            PlayerStats.Instance.ApplyDamage(result.finalDamage);
+        }
 
         // [수정] 통합된 static 함수 호출 (플레이어: 빨간색)
         DamagePopup.SpawnPopup(damageTextPrefab, transform.position, result.finalDamage, result.isCritical, Color.red);
 
-        if (currentHp <= 0)
-        {
-            Die();
-        }
-        else
-        {
-            // 하데스처럼 피격 시 무적 시간 부여 (0.5초)
-            StartCoroutine(InvincibilityRoutine());
-        }
+        // 4. 사망 및 무적 처리
+        if (PlayerStats.Instance.currentHp <= 0) Die();
+        else StartCoroutine(InvincibilityRoutine());
     }
 
     private System.Collections.IEnumerator InvincibilityRoutine()

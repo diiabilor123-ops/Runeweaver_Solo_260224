@@ -17,3 +17,6 @@ MonoBehaviour:
   minPitch: 0.9
   maxPitch: 1.1
   loop: 0
+  playDelay: 0
+  startTime: 0
+  customMixerGroup: {fileID: 0}

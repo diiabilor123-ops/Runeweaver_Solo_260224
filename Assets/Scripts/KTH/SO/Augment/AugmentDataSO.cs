@@ -6,13 +6,22 @@ using Runeweaver.Augment;
 public class AugmentDataSO : ScriptableObject
 {
     [Header("Target Settings")]
-    public SkillSlotType targetSlot; // 어떤 스킬용인가? (LeftClick, Q 등)
-    public ElementType elementType;  // 어떤 원소인가? (Fire, Ice 등)
+    public SkillSlotType targetSlot;
+    public ElementType elementType;
 
     [Header("Step Descriptions (1~6)")]
     [TextArea(3, 5)]
-    public string[] stepDescriptions = new string[6]; // 1단계부터 6단계까지의 설명 텍스트
+    public string[] stepDescriptions = new string[6];
 
-    // 필요하다면 여기에 수치값(float[] statValues) 등을 추가해서 
-    // 실제 로직(AugmentLeftClick 등)에서 참조하게 할 수도 있습니다.
+    [Header("Step Values (1~6)")]
+    [Tooltip("홀수 스택은 스탯 수치, 짝수 스택은 고정 수치나 강화값을 넣으세요")]
+    public float[] stepValues = new float[6];
+
+    // 특정 스택의 수치를 가져오는 헬퍼 함수
+    public float GetValue(int stack)
+    {
+        if (stack <= 0) return 0;
+        int index = Mathf.Clamp(stack - 1, 0, 5);
+        return stepValues[index];
+    }
 }

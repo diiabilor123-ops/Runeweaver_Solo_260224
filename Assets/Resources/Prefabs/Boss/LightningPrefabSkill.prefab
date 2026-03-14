@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 931426559272943200}
   - component: {fileID: 7344959143732116146}
   - component: {fileID: 8060763241014183440}
-  - component: {fileID: 3357738610423519090}
+  - component: {fileID: 9198808416729607097}
   m_Layer: 0
   m_Name: LightningPrefabSkill
   m_TagString: Untagged
@@ -29,8 +29,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -119,7 +119,7 @@ VFXRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
---- !u!114 &3357738610423519090
+--- !u!114 &9198808416729607097
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -128,6 +128,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 8564608024345558901}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f0c71a6d2387b2c43994066849084ae0, type: 3}
+  m_Script: {fileID: 11500000, guid: b88747988cd28be4ab6044f482893755, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossPhaseSkillEffect
+  indicatorRenderer: {fileID: 0}
+  timingPropertyName: _Timing
+  damage: 10
+  damageRadius: 1
+  playerLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  impactDelay: -0.2

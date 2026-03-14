@@ -13,7 +13,10 @@ MonoBehaviour:
   m_Name: Sound_NormalArrow_Hit
   m_EditorClassIdentifier: 
   clip: {fileID: 8300000, guid: fa47f82b62a3b564f9891fcfd602f461, type: 3}
-  volume: 1
+  volume: 0.8
   minPitch: 0.9
   maxPitch: 1.1
   loop: 0
+  playDelay: 0
+  startTime: 0
+  customMixerGroup: {fileID: 0}

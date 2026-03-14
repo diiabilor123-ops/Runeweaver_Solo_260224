@@ -17,6 +17,23 @@ public class Bullet_NormalArrow : BulletBase
     {
         hitTargets.Clear();
         lifeTimer = 0f;
+
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            // [수정] Kinematic이 아닐 때만 속도 초기화 (에러 방지)
+            if (!rb.isKinematic)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+        }
+
+        TrailRenderer trail = GetComponentInChildren<TrailRenderer>();
+        if (trail != null)
+        {
+            trail.Clear();
+        }
     }
 
     void Update()

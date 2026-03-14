@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 4703214625692298967}
   - component: {fileID: 2299572467230386191}
   - component: {fileID: 4954648134359500131}
-  - component: {fileID: 7021285108189239530}
+  - component: {fileID: -8868940266576419078}
   m_Layer: 0
   m_Name: MeteorPrefabSkill
   m_TagString: Untagged
@@ -29,8 +29,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -90,6 +90,11 @@ VFXRenderer:
   m_ReflectionProbeUsage: 0
   m_RayTracingMode: 0
   m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_StaticBatchInfo:
@@ -109,10 +114,12 @@ VFXRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
---- !u!114 &7021285108189239530
+  m_MaskInteraction: 0
+--- !u!114 &-8868940266576419078
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -121,6 +128,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 2040460775051823323}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f0c71a6d2387b2c43994066849084ae0, type: 3}
+  m_Script: {fileID: 11500000, guid: b88747988cd28be4ab6044f482893755, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossPhaseSkillEffect
+  indicatorRenderer: {fileID: 0}
+  timingPropertyName: _Timing
+  damage: 10
+  damageRadius: 1
+  playerLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  impactDelay: -0.1

@@ -31,6 +31,14 @@ namespace Runeweaver.Augment
         /// </summary>
         public void AddElementStack(SkillSlotType slot, ElementType element)
         {
+            // 해당 슬롯의 현재 총 스택 합계를 체크 (최대 6개 제한)
+            int currentTotal = GetTotalStacksInSlot(slot);
+            if (currentTotal >= 6)
+            {
+                Debug.LogWarning($"{slot} 슬롯은 이미 최대 스택(6)입니다.");
+                return;
+            }
+
             switch (slot)
             {
                 case SkillSlotType.LeftClick:
@@ -44,6 +52,24 @@ namespace Runeweaver.Augment
 
             // 스택이 변했음을 알리는 알림 (UI나 이펙트 갱신용)
             Debug.Log($"[Augment] {slot} 슬롯에 {element} 원소 추가됨!");
+        }
+
+        // [추가] 특정 슬롯의 스택을 모두 비우는 기능 (GameMaster용)
+        public void ClearStacks(SkillSlotType slot)
+        {
+            switch (slot)
+            {
+                case SkillSlotType.LeftClick: leftClick.Clear(); break;
+                case SkillSlotType.Passive: passive.Clear(); break;
+            }
+            if (MainHUDController.Instance != null) MainHUDController.Instance.RefreshAllSlots();
+        }
+
+        public int GetTotalStacksInSlot(SkillSlotType slot)
+        {
+            if (slot == SkillSlotType.LeftClick) return leftClick.GetTotalStackCount();
+            if (slot == SkillSlotType.Passive) return passive.GetTotalStackCount();
+            return 0;
         }
 
         // PlayerAugment.cs 내부에 추가

@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 4703214625692298967}
   - component: {fileID: 2299572467230386191}
   - component: {fileID: 4954648134359500131}
-  - component: {fileID: 7021285108189239530}
   - component: {fileID: -2225718322519471026}
   m_Layer: 0
   m_Name: MeteorPrefab
@@ -123,18 +122,6 @@ VFXRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
---- !u!114 &7021285108189239530
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2040460775051823323}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f0c71a6d2387b2c43994066849084ae0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &-2225718322519471026
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -149,3 +136,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossPhaseSkillEffect
   indicatorRenderer: {fileID: 0}
   timingPropertyName: _Timing
+  damage: 10
+  damageRadius: 5
+  playerLayer:
+    serializedVersion: 2
+    m_Bits: 64

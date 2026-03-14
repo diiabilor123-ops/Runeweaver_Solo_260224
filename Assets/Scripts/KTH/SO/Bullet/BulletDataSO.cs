@@ -1,36 +1,36 @@
 using UnityEngine;
+using Runeweaver;
 
 [CreateAssetMenu(fileName = "BulletData", menuName = "BulletDataSO/Data/Bullet")]
 public class BulletDataSO : ScriptableObject
 {
     [Header("Identity")]
-    public string bulletID; // 여기에 "Bullet_FireHoming" 등을 직접 입력합니다.
+    public string bulletID;
 
     [Header("Prefab Settings")]
-    // [중요] 여기에 '진짜' 충돌체가 붙은 화살 프리팹을 넣습니다.
-    public GameObject bulletPrefab;
+    public GameObject bulletPrefab; // 실제 물리/로직이 들어있는 프리팹
 
     [Header("Movement")]
     public float speed = 20f;
-    public float maxDistance = 8f; // 기획안의 8m를 여기서 조절
-    public bool isPenetrating = true; // 기본 공격은 모든 적 관통
+    public float maxDistance = 8f;
+    public bool isPenetrating = true;
 
     [Header("Combat")]
     public float damage = 10f;
-    public float damageMultiplier = 1f; // 기본 데미지에 곱해질 비율 (다발 화살은 0.25)
-    public int manaCost = 0;           // 마나 소모량 (다발 화살은 1)
+    public float damageMultiplier = 1f;
 
-    [Header("Visuals")]
-    public EffectDataSO mainEffect; // 여기에 EffectDataSO를 할당
-    public EffectDataSO hitEffect; // 관통 시 적중 위치에 남길 별도 이펙트 (필요 시)
+    [Header("Visuals (Juice)")]
+    public GameObject shootVFX;       // 발사 시 바람/파동 효과
+    public GameObject[] hitEffectPrefabs; // [0]: 일반 적중, [1]: 패시브 폭발
 
-    // 필요에 따라 발사구(Muzzle)나 별도의 타격(Hit) 이펙트를 따로 쓸 때 사용
-    public EffectDataSO muzzleEffect;
-    public TrailRenderer trailPrefab;
+    [Header("VFX Graph Settings (Optional)")]
+    public bool isVFXGraph = false;   // VFX Graph를 사용한다면 체크
+    public string startEvent = "OnPlay";
+    public string hitEvent = "OnHit";
 
     [Header("Audio Data")]
-    public SoundDataSO shootSound;  // 1. 발사 시 (활 시위 소리)
-    public SoundDataSO flySound;    // 2. 날아가는 동안 (공기 가르는 소리)
-    public SoundDataSO hitSound;    // 3. 적중 시 (퍽/깡 소리)
-
+    public SoundDataSO shootSound;
+    public SoundDataSO flySound;
+    public SoundDataSO hitSound;
+    public SoundDataSO explosionSound;
 }

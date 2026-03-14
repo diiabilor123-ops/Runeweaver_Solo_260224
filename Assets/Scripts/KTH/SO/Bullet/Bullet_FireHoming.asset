@@ -19,11 +19,14 @@ MonoBehaviour:
   isPenetrating: 0
   damage: 10
   damageMultiplier: 0.25
-  manaCost: 0
-  mainEffect: {fileID: 11400000, guid: 8f75119b5c479f94d9a44b23241f7d9b, type: 2}
-  hitEffect: {fileID: 11400000, guid: 440db86a2ff7f8943a940a588a00ff01, type: 2}
-  muzzleEffect: {fileID: 0}
-  trailPrefab: {fileID: 0}
+  shootVFX: {fileID: 0}
+  hitEffectPrefabs:
+  - {fileID: 107096, guid: cae2db3ed5568564fa1d48b121f30f0a, type: 3}
+  - {fileID: 0}
+  isVFXGraph: 1
+  startEvent: create
+  hitEvent: HIT
   shootSound: {fileID: 11400000, guid: ccc7051bbdcdc85408702380b3b7e55b, type: 2}
   flySound: {fileID: 0}
   hitSound: {fileID: 11400000, guid: b789ee6b912e349419c841df756e81c1, type: 2}
+  explosionSound: {fileID: 0}

@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 8927691751655127537}
   - component: {fileID: 4231447555196485847}
   - component: {fileID: 747162554028203497}
-  - component: {fileID: 3233937565969040486}
   - component: {fileID: -6955070764344679730}
   m_Layer: 0
   m_Name: WaterPrefab
@@ -123,18 +122,6 @@ VFXRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
---- !u!114 &3233937565969040486
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5945084301295132745}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f0c71a6d2387b2c43994066849084ae0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &-6955070764344679730
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -149,3 +136,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossPhaseSkillEffect
   indicatorRenderer: {fileID: 0}
   timingPropertyName: _Timing
+  damage: 10
+  damageRadius: 5
+  playerLayer:
+    serializedVersion: 2
+    m_Bits: 64

@@ -44,8 +44,9 @@ public class PoolManager : MonoBehaviour
     {
         if (pools.ContainsKey(prefab))
         {
-            // [수정] activeSelf 체크를 제거하거나, 
-            // 이미 풀에 들어있는지 확인하는 용도로만 사용해야 합니다.
+            // 이미 풀에 들어있는 상태(비활성)라면 다시 반납하지 않도록 방어 코드 추가
+            if (!instance.activeSelf) return;
+
             pools[prefab].Release(instance);
         }
         else

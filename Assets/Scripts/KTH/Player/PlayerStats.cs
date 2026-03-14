@@ -26,8 +26,22 @@ namespace Runeweaver.Player
 
         private void Awake()
         {
-            Instance = this;
+            if (Instance == null) Instance = this;
+            else Destroy(gameObject);
             currentHp = maxHp;
+        }
+
+        public void UpdateHealth(float amount)
+        {
+            currentHp += amount;
+            currentHp = Mathf.Clamp(currentHp, 0, maxHp); // 0 ~ 최대체력 사이로 고정
+        }
+
+        // [추가] 외부에서 체력을 깎을 때 호출하는 안전한 함수
+        public void ApplyDamage(float amount)
+        {
+            currentHp -= amount;
+            currentHp = Mathf.Clamp(currentHp, 0, maxHp); // 0 이하로 내려가지 않게 방지
         }
     }
 }

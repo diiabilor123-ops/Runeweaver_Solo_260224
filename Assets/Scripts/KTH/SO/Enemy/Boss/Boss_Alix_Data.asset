@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   enemyName: Alix
   mainElement: 0
-  maxHp: 10000
+  maxHp: 5000
   moveSpeed: 2.5
   attackDamage: 30
   detectionRange: 10

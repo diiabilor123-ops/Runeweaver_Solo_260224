@@ -21,3 +21,10 @@ MonoBehaviour:
   - 
   - 
   - 
+  stepValues:
+  - 0.1
+  - 0.1
+  - 0.25
+  - 0.25
+  - 0.45
+  - 1

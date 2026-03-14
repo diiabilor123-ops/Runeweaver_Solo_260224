@@ -94,4 +94,10 @@ public class AugmentManager : MonoBehaviour
         return allAugments.Find(x => x.targetSlot == slot && x.elementType == element);
     }
 
+    public float GetAugmentValue(SkillSlotType slot, ElementType element, int currentStack)
+    {
+        var data = GetAugmentData(slot, element);
+        return data != null ? data.GetValue(currentStack) : 0f;
+    }
+
 }

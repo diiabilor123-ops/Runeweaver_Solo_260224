@@ -3,139 +3,127 @@ using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 using System;
-using UnityEngine.AI; // NavMesh 사용을 위해 추가
-using Unity.Cinemachine; // [추가] 시네머신 네임스페이스
+using UnityEngine.AI;
+using Unity.Cinemachine;
 
-[System.Serializable]
-public class BossSkillGroup
-{
-    public string elementName;          // 원소 이름 (메테오, 번개 등)
-    public GameObject phaseBreakPrefab; // [중요] 페이즈 전환 시 타일 파괴용 프리팹
-    public GameObject autoAttackPrefab; // [중요] 평소 플레이어 조준 공격용 프리팹
-    public float indicatorDuration = 2f;
-}
-
+// 페이즈 전환, 타일 파괴, 보스 이동 등 '큰 흐름'만 담당하는 매니저
 public class BossPatternManager : MonoBehaviour
 {
+    [Header("Managers")]
+    public BossAutoAttackManager autoAttackManager; // [중요] 새로 만든 매니저 연결!
     public TileManager tileManager;
     public Transform player;
-    public Animator anim; // [추가] 보스 애니메이터 연결
+    public Animator anim;
+
+    [Header("Global Sounds")]
+    public SoundDataSO phaseTransitionSound;
+    public SoundDataSO tileDemolishSound; // 타일이 박살날 때만 나는 소리
 
     [Header("Camera Settings (Orthographic)")]
     public CinemachineCamera vCam;
-    // 사용자 요청 수치: [0]75%->7, [1]50%->6, [2]25%->5
-    public List<float> phaseOrthoSizes = new List<float> { 7f, 6f, 5f };
-    public float defaultOrthoSize = 8f;
+    public List<float> phaseFOVs = new List<float> { 34f, 32f, 30f };
+    public float defaultFOV = 36f;
 
-    [Header("Skill Pool")]
-    public List<BossSkillGroup> skillPool; // 3가지 원소 스킬 세트
-    private List<int> _availableIndices = new List<int> { 0, 1, 2 }; // 아직 안 쓴 스킬들
-    private List<int> _unlockedIndices = new List<int>();            // 해금된 자동 공격 스킬들
+    [Header("Phase State")]
+    private List<int> _availableIndices = new List<int> { 0, 1, 2 };
+    private Vector3 _originalBossScale;
 
-    private bool _isPhaseRoutineRunning = false;
-    private Coroutine _autoAttackCoroutine;
-    private Vector3 _originalBossScale; // 보스의 원래 스케일을 저장할 변수
+    private void Awake()
+    {
+        _originalBossScale = transform.localScale;
+        if (vCam != null) vCam.Lens.FieldOfView = defaultFOV;
+    }
 
     public void StartPhaseSequence(int phaseIndex, int tileCount)
     {
         StartCoroutine(PhaseSequence(phaseIndex, tileCount));
     }
 
-    private void Awake()
-    {
-        // 시작할 때 보스의 스케일(1.6)을 기억해둡니다.
-        _originalBossScale = transform.localScale;
-    }
-
     private IEnumerator PhaseSequence(int phaseIndex, int tileCount)
     {
-        _isPhaseRoutineRunning = true;
+        // 1. 자동 공격 일시정지
+        if (autoAttackManager != null) autoAttackManager.PauseAttack();
 
-        // [연출] 페이즈 시작 시 카메라 Orthographic Size 변경 (점점 줌인)
-        if (vCam != null && phaseIndex < phaseOrthoSizes.Count)
+        if (phaseTransitionSound != null)
+            SoundManager.Instance.Play(phaseTransitionSound, transform.position);
+
+        if (vCam != null && phaseIndex < phaseFOVs.Count)
         {
-            float targetSize = phaseOrthoSizes[phaseIndex];
-            // Lens.OrthographicSize를 DOTween으로 부드럽게 변경
-            DOTween.To(() => vCam.Lens.OrthographicSize, x => vCam.Lens.OrthographicSize = x, targetSize, 1.5f);
+            float targetFOV = phaseFOVs[phaseIndex];
+            DOTween.To(() => vCam.Lens.FieldOfView, x => vCam.Lens.FieldOfView = x, targetFOV, 2.0f).SetEase(Ease.OutSine);
         }
 
         BossBrain brain = GetComponent<BossBrain>();
-        // [해결 1] 기존 패턴이 실행 중이라면 끝날 때까지 대기
         if (brain != null)
         {
-            while (brain.isPatternRunning) // BossBrain에 public bool isPatternRunning이 있다고 가정
-            {
-                yield return null;
-            }
-            brain.PauseAI(); // 패턴이 확실히 끝난 후 AI 정지
+            while (brain.isPatternRunning) yield return null;
+            brain.PauseAI();
         }
 
-        // 텔레포트 중 사라졌더라도 원래 크기인 1.6으로 돌아옵니다.
-        transform.localScale = _originalBossScale;
+        Vector3 targetPos = new Vector3(0, 0.5f, 0);
 
-        // 1. 중앙 이동 (Y값 0.5 고정) 및 플레이어 밀어내기
-        Vector3 targetPos = new Vector3(0, 0.5f, 0); // 목적지 좌표 고정
-        float moveDuration = 1.2f;
+        float distToCenter = Vector3.Distance(targetPos, player.position);
+        if (distToCenter < 2.0f)
+        {
+            Vector3 pushDir = (player.position - targetPos).normalized;
+            if (pushDir == Vector3.zero) pushDir = Vector3.right;
+            Vector3 pushedPos = targetPos + pushDir * 2.5f;
+            if (NavMesh.SamplePosition(pushedPos, out NavMeshHit hit, 1.0f, NavMesh.AllAreas))
+                player.position = hit.position;
+        }
 
-        transform.DOMove(targetPos, moveDuration).OnUpdate(() => {
-            // 이동 중 보스와 플레이어 사이의 거리가 너무 가까우면 플레이어를 밀어냄
-            float distance = Vector3.Distance(transform.position, player.position);
-            if (distance < 1.8f) // 밀어낼 반경
-            {
-                Vector3 pushDir = (player.position - transform.position).normalized;
-                if (pushDir == Vector3.zero) pushDir = Vector3.right; // 겹쳤을 때 예외처리
+        if (brain != null && brain.Teleport != null)
+            yield return StartCoroutine(brain.Teleport.TeleportRoutine(targetPos, 1f));
+        else
+        {
+            transform.position = targetPos;
+            transform.localScale = _originalBossScale;
+        }
 
-                // [해결 2] 플레이어 낙사 방지 밀기
-                Vector3 nextPos = player.position + pushDir * Time.deltaTime * 5f;
-                NavMeshHit hit;
-                // 이동하려는 위치가 NavMesh(길) 위인지 확인
-                if (NavMesh.SamplePosition(nextPos, out hit, 0.5f, NavMesh.AllAreas))
-                {
-                    player.position = hit.position;
-                }
-            }
-        });
-
-        yield return new WaitForSeconds(moveDuration);
-
-        // 2. 애니메이션 포즈 고정
         if (anim != null)
         {
             anim.SetBool("IsCasting", true);
-            float stopTime = 0.5f;
-            yield return new WaitForSeconds(stopTime);
-            anim.speed = 0; // 기 모으는 느낌으로 정지
+            yield return new WaitForSeconds(0.5f);
+            anim.speed = 0;
         }
 
         transform.DOShakePosition(3.5f, 0.1f);
         yield return new WaitForSeconds(1.0f);
 
-        // 3. 스킬 선정 및 타일 파괴
+        // 2. 스킬 선정 및 해금 요청
         int randomPick = _availableIndices[UnityEngine.Random.Range(0, _availableIndices.Count)];
         _availableIndices.Remove(randomPick);
-        _unlockedIndices.Add(randomPick);
-        BossSkillGroup pickedSkill = skillPool[randomPick];
 
-        List<int> targetIndices = (tileCount == -1)
-            ? tileManager.GetAllActiveTilesExceptCenter()
-            : GetTargetIndices(tileCount);
+        BossSkillGroup pickedSkill = null;
+        if (autoAttackManager != null)
+        {
+            autoAttackManager.UnlockSkill(randomPick);
+            pickedSkill = autoAttackManager.skillPool[randomPick];
+        }
+
+        // 3. 타일 파괴
+        List<int> targetIndices = (tileCount == -1) ? tileManager.GetAllActiveTilesExceptCenter() : GetTargetIndices(tileCount);
 
         foreach (int targetIdx in targetIndices)
         {
-            // 타일의 X, Z 좌표는 가져오되, Y값은 보스처럼 0.5f로 설정
             Vector3 spawnPos = tileManager.tiles[targetIdx].transform.position;
             spawnPos.y = 0.5f;
 
-            SpawnSkill(pickedSkill.phaseBreakPrefab, pickedSkill.indicatorDuration, spawnPos, () => {
-                tileManager.PerformDemolish(targetIdx);
-                Camera.main.transform.DOShakePosition(0.6f, 0.6f);
-            });
+            if (pickedSkill != null)
+            {
+                SpawnPhaseBreakEffect(pickedSkill, spawnPos, () => {
+                    tileManager.PerformDemolish(targetIdx);
+                    Camera.main.transform.DOShakePosition(0.6f, 0.6f);
+
+                    // [사운드] 타일이 깨질 때 전용 효과음 재생
+                    if (tileDemolishSound != null) SoundManager.Instance.Play(tileDemolishSound, spawnPos);
+                });
+            }
             yield return new WaitForSeconds(0.2f);
         }
 
-        yield return new WaitForSeconds(pickedSkill.indicatorDuration);
+        if (pickedSkill != null) yield return new WaitForSeconds(pickedSkill.indicatorDuration);
 
-        // 4. 연출 종료 및 복구
         if (anim != null)
         {
             anim.speed = 1;
@@ -144,10 +132,9 @@ public class BossPatternManager : MonoBehaviour
 
         if (brain != null) brain.ResumeAI();
 
+        // 4. 페이즈 완료 후 자동 공격 다시 시작
         float interval = (phaseIndex == 0) ? 6f : (phaseIndex == 1) ? 4f : 2f;
-        _autoAttackCoroutine = StartCoroutine(AutoAttackLoop(interval));
-
-        _isPhaseRoutineRunning = false;
+        if (autoAttackManager != null) autoAttackManager.ResumeAttack(interval);
     }
 
     private List<int> GetTargetIndices(int count)
@@ -161,53 +148,25 @@ public class BossPatternManager : MonoBehaviour
         return indices;
     }
 
-    private void SpawnSkill(GameObject prefab, float duration, Vector3 position, Action onImpact = null)
+    // 타일 파괴 전용 이펙트 생성기
+    private void SpawnPhaseBreakEffect(BossSkillGroup skill, Vector3 position, Action onImpact = null)
     {
-        if (prefab == null) return;
-
-        // 1. Y값을 0.5f로 고정하여 바닥 묻힘 방지
+        if (skill.phaseBreakPrefab == null) return;
         Vector3 finalPos = new Vector3(position.x, 0.5f, position.z);
 
-        // 2. 오브젝트 풀에서 가져오기
-        GameObject go = PoolManager.Instance.Get(prefab, finalPos, Quaternion.identity);
+        if (skill.indicatorSound != null) SoundManager.Instance.Play(skill.indicatorSound, finalPos);
 
-        // [핵심 수정] Vector3.one 대신 프리팹 자체에 설정된 스케일(8배 등)을 그대로 적용
-        go.transform.localScale = prefab.transform.localScale;
-
+        GameObject go = PoolManager.Instance.Get(skill.phaseBreakPrefab, finalPos, Quaternion.identity);
+        go.transform.localScale = skill.phaseBreakPrefab.transform.localScale;
         go.SetActive(true);
 
         BossPhaseSkillEffect effect = go.GetComponent<BossPhaseSkillEffect>();
         if (effect != null)
         {
-            effect.Play(duration, onImpact);
-        }
-        else
-        {
-            Debug.LogWarning($"{prefab.name}에 BossPhaseSkillEffect가 없습니다!");
-            onImpact?.Invoke();
-        }
-    }
-
-    private IEnumerator AutoAttackLoop(float interval)
-    {
-        while (true)
-        {
-            yield return new WaitForSeconds(interval);
-            if (_isPhaseRoutineRunning) continue;
-
-            if (_unlockedIndices.Count > 0)
-            {
-                int randomIdx = _unlockedIndices[UnityEngine.Random.Range(0, _unlockedIndices.Count)];
-                BossSkillGroup skill = skillPool[randomIdx];
-
-                // 플레이어 위치 발사 시에도 Y값은 0.5f로 고정
-                Vector3 playerPos = player.position;
-                playerPos.y = 0.5f;
-
-                SpawnSkill(skill.autoAttackPrefab, skill.indicatorDuration, playerPos, () => {
-                    Debug.Log($"{skill.elementName} 자동 공격 적중!");
-                });
-            }
+            effect.Play(skill.indicatorDuration, skill.phaseBreakPrefab, () => {
+                onImpact?.Invoke();
+                if (skill.impactSound != null) SoundManager.Instance.Play(skill.impactSound, finalPos);
+            });
         }
     }
 }

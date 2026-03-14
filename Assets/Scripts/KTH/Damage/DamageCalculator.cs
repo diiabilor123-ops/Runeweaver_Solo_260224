@@ -34,16 +34,19 @@ public static class DamageCalculator
         var pass = PlayerAugment.Instance.passive;
 
         // 1. 기본 보너스 (1, 3, 5단계 스탯 증가)
-        float critChance = 50f; // 기본 치명타 확률
+        float critChance = 10f; // 기본 치명타 확률
         float damageModifier = 1.0f;
         float critDamageMultiplier = 2.0f; // 기본 치명타 배율
 
-        // 플레이어일 경우 각 원소별 스탯 보너스 합산
         if (attackerTeam == Team.Player)
         {
-            // 화염: 치명타 확률 / 얼음: 데미지 / 번개: 공속(여기선 제외)
-            critChance += left.GetStatModifier(ElementType.Fire) * 100f;
-            damageModifier += left.GetStatModifier(ElementType.Ice);
+            // [SO 연동] 화염 왼클릭 스택에 따른 치명타 확률 증가 (예: 1, 3, 5스택 수치 적용)
+            float fireBonus = AugmentManager.Instance.GetAugmentValue(SkillSlotType.LeftClick, ElementType.Fire, left.GetStack(ElementType.Fire));
+            critChance += fireBonus * 100f;
+
+            // [SO 연동] 얼음 왼클릭 스택에 따른 데미지 증가 (예: 1, 3, 5스택 수치 적용)
+            float iceBonus = AugmentManager.Instance.GetAugmentValue(SkillSlotType.LeftClick, ElementType.Ice, left.GetStack(ElementType.Ice));
+            damageModifier += iceBonus;
         }
 
         // 2. [신규] 4스택 보너스 적용 (LeftClick 기준)
@@ -59,7 +62,7 @@ public static class DamageCalculator
 
         // 3. 상성 계산 (몬스터 원소 vs 플레이어 발사체 원소)
         float elementalMultiplier = 1.0f;
-        if (targetData != null && playerElements != null && playerElements.Count > 0)
+        if (targetData != null && playerElements.Count > 0)
         {
             MonsterElement targetType = targetData.mainElement;
             bool hasResistanceIgnore = false;
@@ -67,8 +70,11 @@ public static class DamageCalculator
             // 각 원소별 상성 체크
             foreach (var pElem in playerElements)
             {
-                // 패시브 6스택: 해당 속성 반감 무시 체크
-                if (pass.GetStack(pElem) >= 6) hasResistanceIgnore = true;
+                if (pass.IsMastered(pElem))
+                {
+                    // 6스택일 때 SO의 stepValues[5]에 설정된 추가 데미지 배율 적용
+                    damageModifier += AugmentManager.Instance.GetAugmentValue(SkillSlotType.Passive, pElem, 6);
+                }
 
                 float currentTypeMultiplier = 1.0f;
 

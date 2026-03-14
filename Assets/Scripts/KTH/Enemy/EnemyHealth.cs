@@ -77,8 +77,6 @@ public class EnemyHealth : MonoBehaviour, IDamageable
 
             // [해결 1] 크리티컬 여부에 따라 색상 결정 (노란색/흰색)
             Color textColor = finalIsCritical ? Color.yellow : Color.white;
-
-            // [해결 2] 화살이 보내준 크리티컬 정보(finalIsCritical)를 그대로 사용
             DamagePopup.SpawnPopup(damageTextPrefab, transform.position, finalDamage, finalIsCritical, textColor);
 
             // 타격 피드백 결정

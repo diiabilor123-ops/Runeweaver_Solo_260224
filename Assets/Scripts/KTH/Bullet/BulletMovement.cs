@@ -15,9 +15,9 @@ public class BulletMovement : MonoBehaviour
         _base = GetComponent<BulletBase>();
     }
 
-    private void OnEnable()
+    // [수정] OnEnable이 아닌 Setup 직후에 호출될 별도의 초기화 함수
+    public void ResetStartPosition()
     {
-        // 발사 시점의 위치 기록
         _startPosition = transform.position;
     }
 

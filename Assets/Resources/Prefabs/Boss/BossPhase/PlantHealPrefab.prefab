@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 1382387187980317154}
   - component: {fileID: 4050288089481162752}
   - component: {fileID: 3534871658595567081}
-  - component: {fileID: 1518434016492365859}
   m_Layer: 0
   m_Name: PlantHealPrefab
   m_TagString: Untagged
@@ -119,15 +118,3 @@ VFXRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
---- !u!114 &1518434016492365859
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7193163566217465855}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f0c71a6d2387b2c43994066849084ae0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 

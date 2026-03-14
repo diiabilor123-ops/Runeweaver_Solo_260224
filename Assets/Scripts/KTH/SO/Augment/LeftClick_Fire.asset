@@ -15,9 +15,16 @@ MonoBehaviour:
   targetSlot: 2
   elementType: 1
   stepDescriptions:
+  - "\uCE58\uBA85\uD0C0\uD655\uB960 8%\uC99D\uAC00"
   - 
   - 
   - 
   - 
   - 
-  - 
+  stepValues:
+  - 0.08
+  - 0
+  - 0.22
+  - 0.5
+  - 0.4
+  - 1

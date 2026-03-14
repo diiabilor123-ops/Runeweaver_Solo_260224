@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: Sound_NomralArrow_Shoot
   m_EditorClassIdentifier: 
   clip: {fileID: 8300000, guid: 40cf23c63b1657445a8cc78e366c5074, type: 3}
-  volume: 1
+  volume: 0.5
   minPitch: 0.95
   maxPitch: 1.05
   loop: 0
+  playDelay: 0
+  startTime: 0

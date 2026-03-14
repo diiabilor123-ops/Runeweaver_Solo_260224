@@ -1,14 +1,21 @@
 using UnityEngine;
-using UnityEngine.UIElements;
+using DG.Tweening; // 하나만 남기고 중복 제거
+using System.Collections;
 
 /// <summary>
 /// 게임의 모든 효과음을 관리하는 매니저입니다.
-/// 어디서든 SoundManager.Instance.Play(SoundDataSO)로 호출할 수 있습니다.
 /// </summary>
 public class SoundManager : MonoBehaviour
 {
     // 싱글톤: 어디서든 접근 가능하게 함
     public static SoundManager Instance;
+
+    [Header("BGM")]
+    // [수정] SerializeField를 붙여서 인스펙터에서 보이게 합니다.
+    [SerializeField] private AudioSource bgmSource;
+
+    [Header("Mixer Groups")]
+    public UnityEngine.Audio.AudioMixerGroup sfxGroup; // 인스펙터에서 SFX 그룹 연결
 
     private void Awake()
     {
@@ -16,8 +23,10 @@ public class SoundManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            // 씬이 바뀌어도 파괴되지 않게 하려면 아래 주석 해제 (필요 시)
-            // DontDestroyOnLoad(gameObject);
+            // DontDestroyOnLoad(gameObject); // 필요 시 해제
+
+            // [중요] BGM 소스를 미리 생성/초기화합니다.
+            InitializeBGM();
         }
         else
         {
@@ -25,34 +34,63 @@ public class SoundManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// SoundDataSO 데이터를 기반으로 사운드를 재생합니다.
-    /// 하데스 스타일의 랜덤 피치가 적용됩니다.
-    /// </summary>
+    private void InitializeBGM()
+    {
+        if (bgmSource == null)
+        {
+            bgmSource = gameObject.AddComponent<AudioSource>();
+            bgmSource.loop = true;
+            bgmSource.playOnAwake = false;
+            bgmSource.volume = 1.0f; // 기본 볼륨 설정
+        }
+    }
+
+    public void ChangeBGM(SoundDataSO data, float fadeDuration = 1.0f)
+    {
+        if (data == null || data.clip == null) return;
+        if (bgmSource.clip == data.clip) return;
+
+        bgmSource.DOFade(0, fadeDuration).OnComplete(() => {
+            bgmSource.clip = data.clip;
+            // SO에 설정된 기본 볼륨을 타겟으로 설정합니다.
+            float targetVolume = data.volume;
+            bgmSource.Play();
+            bgmSource.DOFade(targetVolume, fadeDuration);
+        });
+    }
+
     public void Play(SoundDataSO data, Vector3 position)
     {
         if (data == null || data.clip == null) return;
 
-        // 효과음용 임시 게임 오브젝트 생성
         GameObject go = new GameObject("TempSFX_" + data.clip.name);
-        go.transform.position = position; // 소리가 날 위치 설정
+        go.transform.position = position;
         AudioSource source = go.AddComponent<AudioSource>();
 
-        // 데이터 적용
+        if (data.customMixerGroup != null)
+        {
+            source.outputAudioMixerGroup = data.customMixerGroup;
+        }
+        else if (sfxGroup != null)
+        {
+            source.outputAudioMixerGroup = sfxGroup;
+        }
+
         source.clip = data.clip;
         source.volume = data.volume;
+        source.pitch = UnityEngine.Random.Range(data.minPitch, data.maxPitch);
+        source.spatialBlend = 1.0f;
 
-        // [하데스 디테일] 매번 미세하게 다른 피치로 재생하여 타격감을 풍성하게 함
-        source.pitch = Random.Range(data.minPitch, data.maxPitch);
+        source.time = data.startTime; // 파일의 중간부터 틉니다 (앞쪽 무음 건너뛰기)
+        source.PlayDelayed(data.playDelay); // n초 뒤에 재생합니다 (너무 일찍 나올 때 지연)
 
-        // 3D 사운드 설정 (필요 시)
-        source.spatialBlend = 1.0f; // 0은 2D, 1은 3D
+        Destroy(go, data.clip.length + 0.1f);
+    }
 
-        // 재생 시작
-        source.loop = data.loop;
-        source.Play();
-
-        // 재생이 끝나면 임시 오브젝트 삭제
-        Destroy(go, data.clip.length);
+    // PlayBGM은 ChangeBGM과 역할이 겹치므로 하나로 통일하거나 
+    // 아래처럼 ChangeBGM을 호출하게 만드는 것이 깔끔합니다.
+    public void PlayBGM(SoundDataSO data, float fadeDuration = 1.0f)
+    {
+        ChangeBGM(data , fadeDuration);
     }
 }

@@ -19,6 +19,7 @@ public class BossBrain : EnemyBrain
     private EnemySword sword;
     private EnemyTeleport teleport;
     public bool isPatternRunning = false;
+    public bool canRotate = true; // [추가] 회전 가능 여부 제어
 
     public Animator anim => animator;
     public new Transform player => base.player;
@@ -33,6 +34,13 @@ public class BossBrain : EnemyBrain
         animator = GetComponent<Animator>();
         teleport = GetComponent<EnemyTeleport>();
         sword = GetComponentInChildren<EnemySword>();
+
+        var agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (agent != null)
+        {
+            agent.updateRotation = false; // 에이전트가 스스로 회전하지 못하게 막음
+        }
+
         if (sword != null) sword.Init(this, data);
     }
 
@@ -127,6 +135,13 @@ public class BossBrain : EnemyBrain
 
     public void FaceTarget(Vector3 target, float speed = 5f) // 기본 속도를 낮춰서 묵직하게
     {
+        if (!canRotate)
+        {
+            // 로그가 찍힌다면, 누군가가 회전 잠금 상태인데도 회전시키려고 시도하는 것입니다.
+            Debug.Log("회전 잠금 상태에서 FaceTarget 호출됨"); 
+            return;
+        }
+
         Vector3 dir = (target - transform.position).normalized;
         dir.y = 0;
 
@@ -135,6 +150,16 @@ public class BossBrain : EnemyBrain
             // Slerp의 수치를 조절하여 '획획' 돌아가는 것을 '스으윽' 돌아가게 변경
             Quaternion targetRot = Quaternion.LookRotation(dir);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * speed);
+        }
+    }
+
+    public void InstantLookAt(Vector3 target)
+    {
+        Vector3 dir = (target - transform.position).normalized;
+        dir.y = 0;
+        if (dir != Vector3.zero)
+        {
+            transform.rotation = Quaternion.LookRotation(dir);
         }
     }
 

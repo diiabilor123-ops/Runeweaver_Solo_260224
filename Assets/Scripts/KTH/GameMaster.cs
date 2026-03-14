@@ -8,13 +8,6 @@ public class GameMaster : MonoBehaviour
     [Header("--- Test Settings ---")]
     [Range(0f, 2.0f)] public float gameSpeed = 1.0f;
 
-    private WeaponHandler _weaponHandler;
-
-    void Start()
-    {
-        _weaponHandler = FindFirstObjectByType<WeaponHandler>();
-    }
-
     void Update()
     {
         Time.timeScale = gameSpeed;
@@ -23,94 +16,80 @@ public class GameMaster : MonoBehaviour
 
     private void HandleHotkeys()
     {
-        // [F1] 모든 원소를 "딱 2스택"으로 맞춤
+        // [F1] 유저 2,2,2 빌드 + 모든 유도탄 100% 확률 세팅
         if (Input.GetKeyDown(KeyCode.F1))
         {
-            SetElementStacks(ElementType.Fire, 2);
-            SetElementStacks(ElementType.Ice, 2);
-            SetElementStacks(ElementType.Volt, 2);
-            ForceMaxProbability(); // 확률도 100%로 고정
-            Debug.Log("<color=green>[GM] 모든 원소 2스택 세팅 완료!</color>");
+            SetupFullHomingUser();
         }
 
-        // [숫자패드 1, 2, 3] 각 원소별로 개별 2스택 보충
-        if (Input.GetKeyDown(KeyCode.Keypad1)) SetElementStacks(ElementType.Fire, 2);
-        if (Input.GetKeyDown(KeyCode.Keypad2)) SetElementStacks(ElementType.Ice, 2);
-        if (Input.GetKeyDown(KeyCode.Keypad3)) SetElementStacks(ElementType.Volt, 2);
-
-        // [F2] 강제 크리티컬 (불 유도탄 테스트용)
+        // [F2] 보스 페이즈 강제 전환 테스트 (75% -> 50% -> 25%)
         if (Input.GetKeyDown(KeyCode.F2))
         {
-            _weaponHandler?.ExecuteAttack(SkillSlotType.LeftClick, true, 0f);
+            ForceNextBossPhase();
         }
 
-        // [F9] 모든 몬스터 즉시 처치
         if (Input.GetKeyDown(KeyCode.F9)) KillAllEnemies();
     }
 
-    /// <summary>
-    /// 특정 원소의 스택을 원하는 개수(targetCount)만큼 맞춥니다.
-    /// </summary>
-    private void SetElementStacks(ElementType element, int targetCount)
+    private void SetupFullHomingUser()
     {
         if (PlayerAugment.Instance == null) return;
 
-        // 현재 스택 확인 (PlayerAugment 내부에 스택 리스트가 있으므로 호출)
-        // 주의: 현재 구조상 스택을 '깎는' 기능이 없다면 필요한 만큼만 Add해줍니다.
-        int currentCount = GetCurrentStackCount(element);
+        // 1. 기존 스택 청소 (에러 방지를 위해 먼저 Clear)
+        PlayerAugment.Instance.ClearStacks(SkillSlotType.LeftClick);
+        PlayerAugment.Instance.ClearStacks(SkillSlotType.Passive);
 
-        if (currentCount < targetCount)
+        // 2. 2, 2, 2 스택 주입 (유도탄 및 폭발 조건 충족)
+        foreach (ElementType type in new[] { ElementType.Fire, ElementType.Ice, ElementType.Volt })
         {
-            int need = targetCount - currentCount;
-            for (int i = 0; i < need; i++)
+            for (int i = 0; i < 2; i++)
             {
-                PlayerAugment.Instance.AddElementStack(SkillSlotType.LeftClick, element);
+                PlayerAugment.Instance.AddElementStack(SkillSlotType.LeftClick, type);
+                PlayerAugment.Instance.AddElementStack(SkillSlotType.Passive, type);
             }
-            Debug.Log($"<color=white>[GM] {element} 스택 보충: {currentCount} -> {targetCount}</color>");
         }
-        else
-        {
-            Debug.Log($"<color=yellow>[GM] {element}는 이미 {currentCount}스택 이상입니다.</color>");
-        }
-    }
 
-    // 확률 100% 강제 고정 (테스트 편의성)
-    private void ForceMaxProbability()
-    {
-        if (PlayerAugment.Instance == null || PlayerAugment.Instance.leftClick == null) return;
-
+        // 3. 발사 확률 100% 강제 고정
         var aug = PlayerAugment.Instance.leftClick;
-
-        // 1. 기존 원소 발사 확률 최대화
         aug.iceSpawnChance = 1.0f;
         aug.voltBaseChance = 1.0f;
 
-        // 2. [치명타 확률 100%로 만들기]
-        // 플레이어 스탯을 관리하는 스크립트(예: PlayerStats)를 찾아서 수정합니다.
-        // 만약 스크립트 이름을 모르신다면 확인이 필요합니다.
-        var playerStats = FindFirstObjectByType<PlayerStats>();
-        if (playerStats != null)
-        {
-            playerStats.critRate = 1.0f; // 치명타 확률 100%
-            Debug.Log("<color=orange>[GM] 플레이어 치명타 확률 100% 설정 완료!</color>");
-        }
+        // 화염 유도탄은 치명타 시 발사이므로 치명타 100% 설정
+        if (PlayerStats.Instance != null) PlayerStats.Instance.critRate = 1.0f;
+
+        Debug.Log("<color=cyan>[GM] 풀호밍 모드: 모든 화살 유도 + 패시브 폭발 활성화!</color>");
     }
 
-    // 현재 특정 원소가 몇 스택인지 체크하는 보조 메서드
-    private int GetCurrentStackCount(ElementType element)
+    private void ForceNextBossPhase()
     {
-        // [수정] .currentStacks 대신 .GetStack(element)를 직접 호출합니다.
-        if (PlayerAugment.Instance != null && PlayerAugment.Instance.leftClick != null)
+        // 씬에서 BossPhaseManager를 찾음
+        BossPhaseManager phaseManager = FindFirstObjectByType<BossPhaseManager>();
+        if (phaseManager == null) return;
+
+        EnemyHealth bossHealth = phaseManager.GetComponent<EnemyHealth>();
+        if (bossHealth == null) return;
+
+        // 현재 체력 비율에 따라 다음 페이즈로 넘기기 위해 체력을 깎음
+        // 26%씩 깎으면 75%, 50%, 25% 라인을 순차적으로 통과함
+        float damageAmount = bossHealth.enemyData.maxHp * 0.26f;
+        bossHealth.TakeDamage(new HitData
         {
-            return PlayerAugment.Instance.leftClick.GetStack(element);
-        }
-        return 0;
+            damage = damageAmount,
+            attackerTeam = Team.Player,
+            hitPoint = bossHealth.transform.position
+        });
+
+        Debug.Log("<color=red>[GM] 보스 페이즈 트리거 데미지 투하!</color>");
     }
 
     private void KillAllEnemies()
     {
         EnemyHealth[] enemies = FindObjectsByType<EnemyHealth>(FindObjectsSortMode.None);
-        foreach (var enemy in enemies) enemy.TakeDamage(new HitData { damage = 9999f });
-        Debug.Log("<color=yellow>[GM] 필드 클리어.</color>");
+        foreach (var enemy in enemies)
+        {
+            // 보스는 죽이지 않고 잡몹만 처치 (보스 기믹 테스트 방해 금지)
+            if (enemy.GetComponent<BossPhaseManager>() != null) continue;
+            enemy.TakeDamage(new HitData { damage = 9999f });
+        }
     }
 }
