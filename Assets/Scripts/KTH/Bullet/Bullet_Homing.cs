@@ -103,7 +103,7 @@ public class Bullet_Homing : BulletBase
         // PoolManager에서 이미 설정해준 위치를 기준점으로 잡습니다.
         Vector3 spawnOrigin = transform.position;
         float randomSide = Random.Range(-0.2f, 0.2f);
-        float finalOffset = 1.2f * sideSign;
+        float finalOffset = 1.0f * sideSign;
 
         Vector3 offset = Vector3.zero;
         switch (style)

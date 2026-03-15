@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bulletID: Bullet_FireHoming
   bulletPrefab: {fileID: 7462377681604547170, guid: 2542a77482b4a0b4881b0a9cbfa25ac9, type: 3}
-  speed: 50
+  speed: 100
   maxDistance: 15
   isPenetrating: 0
   damage: 10
@@ -22,11 +22,11 @@ MonoBehaviour:
   shootVFX: {fileID: 0}
   hitEffectPrefabs:
   - {fileID: 107096, guid: cae2db3ed5568564fa1d48b121f30f0a, type: 3}
-  - {fileID: 0}
+  - {fileID: 115286, guid: b3214c64ab3b6fd4b919414222bb5781, type: 3}
   isVFXGraph: 1
   startEvent: create
   hitEvent: HIT
-  shootSound: {fileID: 11400000, guid: ccc7051bbdcdc85408702380b3b7e55b, type: 2}
-  flySound: {fileID: 0}
+  shootSound: {fileID: 11400000, guid: 398d94530ff1d844dbdfef8d1467fac1, type: 2}
+  flySound: {fileID: 11400000, guid: a1df25561949ba3449bc5ab7c0e39bef, type: 2}
   hitSound: {fileID: 11400000, guid: b789ee6b912e349419c841df756e81c1, type: 2}
-  explosionSound: {fileID: 0}
+  explosionSound: {fileID: 11400000, guid: 1d77528a8e65e124291a5e4f19964f5c, type: 2}

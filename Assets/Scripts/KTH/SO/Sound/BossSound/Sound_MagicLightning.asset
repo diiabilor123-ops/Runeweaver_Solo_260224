@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Sound_MagicLightning
   m_EditorClassIdentifier: Assembly-CSharp::SoundDataSO
   clip: {fileID: 8300000, guid: 681578cbfe4da2f4bbf54c2ad85d4844, type: 3}
-  volume: 0.8
+  volume: 0.9
   minPitch: 0.9
   maxPitch: 1.1
   loop: 0

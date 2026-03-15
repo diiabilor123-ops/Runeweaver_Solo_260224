@@ -13,6 +13,9 @@ namespace Runeweaver.Player
         [SerializeField] private LayerMask wallLayer; // 벽 레이어 인스펙터에서 설정 필수!
         [SerializeField] private float stepSize = 0.2f;
 
+        [Header("Audio")] // 1. 사운드 데이터 필드 추가
+        [SerializeField] private SoundDataSO dashSound;
+
         public bool CanDash { get; private set; } = true;
         private PlayerController _controller;
         private Animator _anim;
@@ -35,6 +38,12 @@ namespace Runeweaver.Player
         {
             CanDash = false;
             _controller.IsDashing = true;
+
+            // 2. 대시 사운드 재생 (애니메이션과 함께 즉시 발생)
+            if (dashSound != null && SoundManager.Instance != null)
+            {
+                SoundManager.Instance.Play(dashSound, transform.position);
+            }
 
             if (_anim) _anim.SetTrigger("Dash");
 

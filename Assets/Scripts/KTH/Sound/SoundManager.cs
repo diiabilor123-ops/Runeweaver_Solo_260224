@@ -84,7 +84,19 @@ public class SoundManager : MonoBehaviour
         source.time = data.startTime; // 파일의 중간부터 틉니다 (앞쪽 무음 건너뛰기)
         source.PlayDelayed(data.playDelay); // n초 뒤에 재생합니다 (너무 일찍 나올 때 지연)
 
-        Destroy(go, data.clip.length + 0.1f);
+        float totalLifeTime;
+        if (data.playDuration > 0)
+        {
+            totalLifeTime = data.playDelay + data.playDuration;
+        }
+        else
+        {
+            // 남은 길이 = 전체 길이 - 시작 지점
+            float remainingLength = data.clip.length - data.startTime;
+            totalLifeTime = data.playDelay + remainingLength + 0.1f;
+        }
+
+        Destroy(go, totalLifeTime);
     }
 
     // PlayBGM은 ChangeBGM과 역할이 겹치므로 하나로 통일하거나 

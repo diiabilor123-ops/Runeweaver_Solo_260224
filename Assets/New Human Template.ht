@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1105 &110500000
+HumanTemplate:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: New Human Template
+  m_BoneTemplate:
+    Chest: Chest
+    Head: Head
+    Hips: Hips
+    Left Index Distal: finger_index_distal_L
+    Left Index Intermediate: finger_index_intermediate_L
+    Left Index Proximal: finger_index_proximal_L
+    Left Little Distal: finger_little_distal_L
+    Left Little Intermediate: finger_little_intermediate_L
+    Left Little Proximal: finger_little_proximal_L
+    Left Middle Distal: finger_middle_distal_L
+    Left Middle Intermediate: finger_middle_intermediate_L
+    Left Middle Proximal: finger_middle_proximal_L
+    Left Ring Distal: finger_ring_distal_L
+    Left Ring Intermediate: finger_ring_intermediate_L
+    Left Ring Proximal: finger_ring_proximal_L
+    Left Thumb Distal: finger_thumbs_distal_L
+    Left Thumb Intermediate: finger_thumbs_intermediate_L
+    Left Thumb Proximal: finger_thumbs_proximal_L
+    LeftEye: eye_L
+    LeftFoot: Foot_L
+    LeftHand: hand_L
+    LeftLowerArm: forearm_L
+    LeftLowerLeg: Lower_Leg_L
+    LeftShoulder: shoulder_L
+    LeftToes: Toes_L
+    LeftUpperArm: Arm_L
+    LeftUpperLeg: Upper_Leg_L
+    Neck: Neck
+    Right Index Distal: finger_index_distal_R
+    Right Index Intermediate: finger_index_intermediate_R
+    Right Index Proximal: finger_index_proximal_R
+    Right Little Distal: finger_little_distal_R
+    Right Little Intermediate: finger_little_intermediate_R
+    Right Little Proximal: finger_little_proximal_R
+    Right Middle Distal: finger_middle_distal_R
+    Right Middle Intermediate: finger_middle_intermediate_R
+    Right Middle Proximal: finger_middle_proximal_R
+    Right Ring Distal: finger_ring_distal_R
+    Right Ring Intermediate: finger_ring_intermediate_R
+    Right Ring Proximal: finger_ring_proximal_R
+    Right Thumb Distal: finger_thumbs_distal_R
+    Right Thumb Intermediate: finger_thumbs_intermediate_R
+    Right Thumb Proximal: finger_thumbs_proximal_R
+    RightEye: eye_R
+    RightFoot: Foot_R
+    RightHand: hand_R
+    RightLowerArm: forearm_R
+    RightLowerLeg: Lower_Leg_R
+    RightShoulder: shoulder_R
+    RightToes: Toes_R
+    RightUpperArm: Arm_R
+    RightUpperLeg: Upper_Leg_R
+    Spine: Spine
+    UpperChest: UpperChest

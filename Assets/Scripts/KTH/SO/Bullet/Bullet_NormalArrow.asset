@@ -25,7 +25,7 @@ MonoBehaviour:
   isVFXGraph: 1
   startEvent: create
   hitEvent: HIT
-  shootSound: {fileID: 11400000, guid: ccc7051bbdcdc85408702380b3b7e55b, type: 2}
-  flySound: {fileID: 0}
+  shootSound: {fileID: 11400000, guid: 2e223534aacb5f141835f7d8c5b299b1, type: 2}
+  flySound: {fileID: 11400000, guid: ccc7051bbdcdc85408702380b3b7e55b, type: 2}
   hitSound: {fileID: 11400000, guid: 361ec1f72ec845f4389cf18a5f755f79, type: 2}
   explosionSound: {fileID: 0}

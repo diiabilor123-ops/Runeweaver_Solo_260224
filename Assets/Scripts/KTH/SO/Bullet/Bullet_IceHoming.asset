@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bulletID: Bullet_IceHoming
   bulletPrefab: {fileID: 7462377681604547170, guid: 9ac4238abcc4a2f44bc166b444a1cdf1, type: 3}
-  speed: 50
+  speed: 100
   maxDistance: 15
   isPenetrating: 0
   damage: 10
@@ -22,11 +22,11 @@ MonoBehaviour:
   shootVFX: {fileID: 0}
   hitEffectPrefabs:
   - {fileID: 107096, guid: a8f531df98b33b0498d3fd74b5af15ee, type: 3}
-  - {fileID: 0}
+  - {fileID: 1823640347418602, guid: bb7de1f7d93812d4e985ca680851f204, type: 3}
   isVFXGraph: 1
   startEvent: create
   hitEvent: HIT
-  shootSound: {fileID: 11400000, guid: ccc7051bbdcdc85408702380b3b7e55b, type: 2}
-  flySound: {fileID: 0}
+  shootSound: {fileID: 11400000, guid: 6f4f646434e44b144a667a4ca99044db, type: 2}
+  flySound: {fileID: 11400000, guid: f02bb283f02d0bc4cbeb4a3d8139cc2f, type: 2}
   hitSound: {fileID: 11400000, guid: 33ba3b23c4175b146a6b36d0a6f61f13, type: 2}
-  explosionSound: {fileID: 0}
+  explosionSound: {fileID: 11400000, guid: b1039cad84f6e2e498ba8f41f91725db, type: 2}

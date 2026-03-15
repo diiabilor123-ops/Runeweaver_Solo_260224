@@ -16,6 +16,8 @@ public class SoundDataSO : ScriptableObject
 
     [Tooltip("파일의 몇 초 지점부터 재생할 것인가? (앞부분 무음 자를 때 사용)")]
     public float startTime = 0f;
+    [Tooltip("0이면 끝까지 재생, 0보다 크면 그 시간(초)만큼만 재생하고 멈춤")]
+    public float playDuration = 0f; // 추가된 필드
 
     [Header("Advanced (선택사항)")]
     [Tooltip("비워두면 기본 SFX 통로를 타고, 지정하면 그 통로를 탑니다.")]

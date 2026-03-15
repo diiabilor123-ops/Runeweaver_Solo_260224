@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d4119afefd011c499fe7e30ac9c579b, type: 3}
+  m_Name: Sound_Footstep_Nomal
+  m_EditorClassIdentifier: Assembly-CSharp::SoundDataSO
+  clip: {fileID: 8300000, guid: 01c8078a0bd024a47868a6449c54ca8e, type: 3}
+  volume: 0.15
+  minPitch: 0.9
+  maxPitch: 1.1
+  loop: 0
+  playDelay: 0
+  startTime: 0
+  customMixerGroup: {fileID: 1020555163358144356, guid: 6e815225172adc34782639ba11eda2a5, type: 2}
