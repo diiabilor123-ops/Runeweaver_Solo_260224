@@ -1,6 +1,6 @@
-﻿using UnityEngine;
-using System.Collections;
+﻿using System.Collections;
 using Unity.Cinemachine; // 시네머신 3.0 네임스페이스 추가
+using UnityEngine;
 
 
 /// <summary>
@@ -15,6 +15,10 @@ public class FeedbackManager : MonoBehaviour
     [Header("Impulse")]
     // 이 스크립트가 붙은 오브젝트에 'Cinemachine Impulse Source'를 추가하고 여기에 할당하세요.
     [SerializeField] private CinemachineImpulseSource _impulseSource;
+
+    [Header("0. Normal Attack (발사 및 일반 적중)")]
+    [SerializeField] private float normalStop = 0.03f;  // 아주 짧은 멈춤
+    [SerializeField] private float normalShake = 0.3f; // 아주 약한 흔들림
 
     [Header("1. Critical Hit (연출: 흔들림만 살짝)")]
     [SerializeField] private float critStop = 0.07f;
@@ -41,6 +45,7 @@ public class FeedbackManager : MonoBehaviour
     }
 
     // 상황별 피드백 실행 함수들
+    public void PlayNormalFeedback() => ExecuteHitFeedback(normalStop, normalShake);
     public void PlayCritFeedback() => ExecuteHitFeedback(critStop, critShake);
     public void PlayMassiveFeedback() => ExecuteHitFeedback(massiveStop, massiveShake);
     public void PlayOneShotFeedback() => ExecuteHitFeedback(oneShotStop, oneShotShake);
@@ -61,6 +66,19 @@ public class FeedbackManager : MonoBehaviour
         }
     }
 
+    // 방향을 포함한 피드백 실행
+    public void ExecuteDirectionalHitFeedback(float duration, float intensity, Vector3 direction)
+    {
+        if (duration > 0) PlayHitStop(duration);
+
+        if (_impulseSource != null && intensity > 0)
+        {
+            // GenerateImpulseWithVelocity는 방향(Vector3)과 힘을 동시에 줄 수 있습니다.
+            // 공격 방향(direction)으로 카메라를 툭 밀어주는 느낌을 줍니다.
+            _impulseSource.GenerateImpulseWithVelocity(direction * intensity);
+        }
+    }
+
     // 역경직 (TimeScale 조절)
     private void PlayHitStop(float duration)
     {
@@ -76,4 +94,5 @@ public class FeedbackManager : MonoBehaviour
         Time.timeScale = 1f;
         _hitStopCoroutine = null;
     }
+
 }

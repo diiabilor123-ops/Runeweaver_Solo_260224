@@ -60,7 +60,10 @@ VisualEffect:
     m_Vector3f:
       m_Array: []
     m_Vector4f:
-      m_Array: []
+      m_Array:
+      - m_Value: {x: 0.011764706, y: 0.14901961, z: 0.9254902, w: 1}
+        m_Name: DarkColor
+        m_Overridden: 1
     m_Uint:
       m_Array: []
     m_Int:
@@ -141,3 +144,4 @@ MonoBehaviour:
   playerLayer:
     serializedVersion: 2
     m_Bits: 64
+  impactDelay: 0

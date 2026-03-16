@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Linq;
 
 namespace Runeweaver.Player
 {
@@ -9,33 +10,89 @@ namespace Runeweaver.Player
     {
         [SerializeField] private Transform firePoint;
 
-        /// <summary>
-        /// 마우스 커서 방향으로 몸체(Y축)와 발사구(정확한 좌표)를 즉시 회전시킵니다.
-        /// 기존 PlayerCombat의 InstantLookAtMouse 로직을 그대로 계승합니다.
-        /// </summary>
-        public void UpdateAim()
-        {
-            if (UnityEngine.Camera.main == null) return;
+        [Header("Magnetic Aim Settings")]
+        [SerializeField] private float assistRadius = 2.5f;
+        [SerializeField] private float maxAssistAngle = 35f;
+        [SerializeField] private LayerMask enemyLayer;
 
-            // 1. 카메라 레이캐스트로 지면(수평 평면) 충돌 계산
+        /// <summary>
+        /// 마우스 커서가 가리키는 지점을 '바닥 평면' 기준으로 찾아줍니다.
+        /// </summary>
+        public Vector3 GetMouseWorldPosition()
+        {
+            if (UnityEngine.Camera.main == null) return transform.position + transform.forward;
+
             Ray ray = UnityEngine.Camera.main.ScreenPointToRay(Input.mousePosition);
+            // 발사 지점(firePoint)의 높이를 기준으로 가상의 바닥 평면을 만듭니다.
             Plane horizontalPlane = new Plane(Vector3.up, new Vector3(0, firePoint.position.y, 0));
 
             if (horizontalPlane.Raycast(ray, out float enter))
             {
-                Vector3 hitPoint = ray.GetPoint(enter);
-
-                // 2. 캐릭터 몸체 회전 (Y축 고정하여 눕는 현상 방지)
-                Vector3 lookDir = hitPoint - transform.position;
-                lookDir.y = 0;
-                if (lookDir != Vector3.zero)
-                    transform.rotation = Quaternion.LookRotation(lookDir);
-
-                // 3. 발사구(firePoint) 회전 (상하 각도까지 포함하여 정확한 조준)
-                Vector3 fireDir = hitPoint - firePoint.position;
-                if (fireDir != Vector3.zero)
-                    firePoint.rotation = Quaternion.LookRotation(fireDir.normalized);
+                return ray.GetPoint(enter);
             }
+
+            return transform.position + transform.forward * 10f;
+        }
+
+        /// <summary>
+        /// 마우스 주변의 적을 찾아 보정된 방향을 반환합니다.
+        /// </summary>
+        public Vector3 GetMagneticAimDirection()
+        {
+            Vector3 mouseWorldPos = GetMouseWorldPosition();
+            Vector3 currentForward = transform.forward;
+
+            // 1. 마우스 주변 적 탐색
+            Collider[] hits = Physics.OverlapSphere(mouseWorldPos, assistRadius, enemyLayer);
+            if (hits.Length == 0) return currentForward;
+
+            Collider bestTarget = null;
+            float minMouseDist = float.MaxValue;
+
+            foreach (var hit in hits)
+            {
+                Vector3 enemyGroundPos = hit.transform.position;
+                enemyGroundPos.y = transform.position.y; // 높이 평면화
+
+                Vector3 dirToTarget = (enemyGroundPos - transform.position).normalized;
+
+                // [각도 필터] 내 정면 기준 일정 각도 이내만
+                float angle = Vector3.Angle(currentForward, dirToTarget);
+                if (angle > maxAssistAngle) continue;
+
+                // [거리 필터] 마우스 조준점과 가장 가까운 적
+                float distToMouse = Vector3.Distance(mouseWorldPos, enemyGroundPos);
+                if (distToMouse < minMouseDist)
+                {
+                    minMouseDist = distToMouse;
+                    bestTarget = hit;
+                }
+            }
+
+            if (bestTarget != null)
+            {
+                Vector3 finalDir = (bestTarget.transform.position - transform.position).normalized;
+                finalDir.y = 0;
+                return finalDir;
+            }
+
+            return currentForward;
+        }
+
+        public void UpdateAim()
+        {
+            Vector3 hitPoint = GetMouseWorldPosition();
+
+            // 캐릭터 몸체 회전
+            Vector3 lookDir = hitPoint - transform.position;
+            lookDir.y = 0;
+            if (lookDir != Vector3.zero)
+                transform.rotation = Quaternion.LookRotation(lookDir);
+
+            // 발사구 회전
+            Vector3 fireDir = hitPoint - firePoint.position;
+            if (fireDir != Vector3.zero)
+                firePoint.rotation = Quaternion.LookRotation(fireDir.normalized);
         }
     }
 }

@@ -96,6 +96,14 @@ namespace Runeweaver.Player
                 var bulletData = overrideData ?? BulletManager.Instance.GetCurrentEquippedData();
                 var elements = customElements ?? PlayerAugment.Instance.GetSortedElements(slot);
 
+                // [추가] 머즐 이펙트(shootVFX) 생성
+                if (bulletData.shootVFX != null)
+                {
+                    // 발사 위치에 이펙트 생성 후 자동 파괴되도록 설정 (프리팹 자체에 파괴 로직이 없다면 아래처럼 처리)
+                    GameObject vfx = Instantiate(bulletData.shootVFX, finalPos, finalRot);
+                    Destroy(vfx, 1.0f);
+                }
+
                 // 3. Setup 호출 (이게 실행되어야 디버그 로그가 뜹니다!)
                 bullet.Setup(bulletData, direction, elements, slot, prefab);
             }

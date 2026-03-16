@@ -1,5 +1,6 @@
-﻿using UnityEngine;
+﻿using DG.Tweening;
 using System.Collections;
+using UnityEngine;
 
 /// <summary>
 /// [공통 몬스터 비주얼] 모든 몬스터의 피격 번쩍임, 애니메이션, 시각 효과를 담당합니다.
@@ -187,5 +188,17 @@ public class EnemyVisuals : MonoBehaviour
         if (afterimage == null) return;
         if (active) afterimage.StartAfterimage();
         else afterimage.StopAfterimage();
+    }
+
+    public void PlayDirectionalHitShake(Vector3 attackDir)
+    {
+        if (modelTransform == null) return;
+
+        // 기존 흔들림/트윈이 있다면 멈추고 초기화
+        modelTransform.DOKill(true);
+
+        // [핵심] PunchPosition: 공격 방향으로 툭 밀렸다가(Elastic하게) 돌아옵니다.
+        // 0.1초 동안 아주 빠르게 발생하므로 '피격감'이 극대화됩니다.
+        modelTransform.DOPunchPosition(attackDir * shakeMagnitude, shakeDuration, 10, 1);
     }
 }

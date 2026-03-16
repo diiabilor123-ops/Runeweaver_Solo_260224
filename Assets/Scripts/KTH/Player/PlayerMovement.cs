@@ -22,6 +22,7 @@ namespace Runeweaver.Player
 
         public void Move(Vector3 dir, bool isAttacking)
         {
+            // 1. 공격 중일 때는 물리 이동과 애니메이션 모두 정지
             if (isAttacking)
             {
                 StopMovementAnimation();
@@ -29,27 +30,30 @@ namespace Runeweaver.Player
                 return;
             }
 
+            // 2. 방향 입력이 있을 때 (WASD를 누르고 있을 때)
             if (dir != Vector3.zero)
             {
+                // [회전] 이동 가능 여부와 상관없이 입력 방향으로 캐릭터를 돌립니다.
                 Quaternion targetRotation = Quaternion.LookRotation(dir);
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * PlayerStats.Instance.rotateSpeed);
 
+                // [애니메이션] 이동 가능 여부와 상관없이 "달리기" 파라미터를 올립니다.
+                // 이렇게 해야 낭떠러지에서 비비더라도 캐릭터가 달리는 모션을 취합니다.
+                UpdateAnimationParameter(1.0f);
+                _anim.speed = 1.0f;
+
+                // [물리 이동] 오직 바닥이 있을 때만 실제로 위치를 옮깁니다.
                 if (IsGroundAhead(dir))
                 {
                     transform.position += dir * PlayerStats.Instance.moveSpeed * Time.deltaTime;
-
-                    // [수정] 애니메이션 재생 속도를 이동 속도에 맞춥니다.
-                    _anim.speed = 1.0f;
-
-                    // [핵심] 목표값을 1.0(Run)으로 전달합니다. 
-                    // (걷기/뛰기 키가 따로 있다면 여기서 값을 분기하면 됩니다)
-                    UpdateAnimationParameter(1.0f);
                 }
                 else
                 {
-                    StopMovementAnimation();
+                    // 바닥이 없으면 위치 이동만 안 할 뿐, 위에서 애니메이션은 이미 1.0으로 가고 있습니다.
+                    // 만약 낭떠러지에서 비비는 속도를 늦추고 싶다면 여기서 _anim.speed = 0.5f; 정도로 낮출 수 있습니다.
                 }
             }
+            // 3. 입력이 없을 때 (키보드에서 손을 뗐을 때)
             else
             {
                 _anim.speed = 1.0f;

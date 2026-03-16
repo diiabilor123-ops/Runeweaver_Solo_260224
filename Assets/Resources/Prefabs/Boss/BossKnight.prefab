@@ -1088,9 +1088,9 @@ MonoBehaviour:
   flashDuration: 0.1
   enemyhitFlashIntensity: 5
   rimPower: 2
-  modelTransform: {fileID: 0}
-  shakeMagnitude: 0.15
-  shakeDuration: 5
+  modelTransform: {fileID: 3683593109006326686}
+  shakeMagnitude: 0.2
+  shakeDuration: 0.1
   teleportStartVFX: {fileID: 180820, guid: 5b7408223c94710458da5574bf75a7d2, type: 3}
   teleportEndVFX: {fileID: 1684764806622204, guid: 1775c0d000103884eaf9fe4596c61884, type: 3}
 --- !u!114 &5045262803957568150

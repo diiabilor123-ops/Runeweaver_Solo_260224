@@ -19,7 +19,7 @@ MonoBehaviour:
   isPenetrating: 0
   damage: 10
   damageMultiplier: 0.25
-  shootVFX: {fileID: 0}
+  shootVFX: {fileID: 117382, guid: b9017351e2990504f9ea79d7c3e19d6a, type: 3}
   hitEffectPrefabs:
   - {fileID: 107096, guid: a8f531df98b33b0498d3fd74b5af15ee, type: 3}
   - {fileID: 1823640347418602, guid: bb7de1f7d93812d4e985ca680851f204, type: 3}

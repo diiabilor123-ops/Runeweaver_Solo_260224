@@ -20,10 +20,13 @@ namespace Runeweaver.Player
         private PlayerController _controller;
         private Animator _anim;
 
+        private PlayerCombat _combat; // 참조 추가
+
         private void Awake()
         {
             _controller = GetComponent<PlayerController>();
             _anim = GetComponent<Animator>();
+            _combat = GetComponent<PlayerCombat>(); // 추가
         }
 
         public void DoDash(Vector3 inputDir)
@@ -36,6 +39,9 @@ namespace Runeweaver.Player
 
         private IEnumerator DashRoutine(Vector3 inputDir)
         {
+            // [핵심] 대시 시작하자마자 공격 강제 종료!
+            if (_combat != null) _combat.CancelAttack();
+
             CanDash = false;
             _controller.IsDashing = true;
 

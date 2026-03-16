@@ -84,6 +84,29 @@ public class BulletBase : MonoBehaviour
 
             enemyHealth.TakeDamage(hitData);
 
+            Vector3 hitDir = this.Direction; // 화살이 날아가던 방향
+
+            if (FeedbackManager.Instance != null)
+            {
+                if (damageResult.isCritical)
+                {
+                    // 크리티컬 적중: 0.1초 멈춤, 강한 방향성 흔들림(1.2f)
+                    FeedbackManager.Instance.ExecuteDirectionalHitFeedback(0.1f, 1.2f, hitDir);
+                }
+                else
+                {
+                    // 일반 적중: 0.05초 미세 멈춤, 적당한 방향성 흔들림(0.5f)
+                    FeedbackManager.Instance.ExecuteDirectionalHitFeedback(0.05f, 0.5f, hitDir);
+                }
+            }
+
+            // 적 비주얼 효과 실행 (번쩍임 + 화살 방향으로 툭 젖혀짐)
+            if (other.TryGetComponent<EnemyVisuals>(out var enemyVisuals))
+            {
+                enemyVisuals.PlayHitFlash(); // 하얗게 번쩍
+                enemyVisuals.PlayDirectionalHitShake(hitDir); // 화살 방향으로 펀치 효과
+            }
+
             // 2. 비주얼 및 사운드 (일반 적중 효과만)
             var visuals = GetComponent<EffectVisuals>();
             if (visuals != null) visuals.PlayHitVisual(transform.position);

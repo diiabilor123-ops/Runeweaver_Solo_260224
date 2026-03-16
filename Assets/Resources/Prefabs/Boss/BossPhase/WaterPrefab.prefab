@@ -60,7 +60,16 @@ VisualEffect:
     m_Vector3f:
       m_Array: []
     m_Vector4f:
-      m_Array: []
+      m_Array:
+      - m_Value: {x: 1, y: 0, z: 0, w: 1}
+        m_Name: IndicatorColor
+        m_Overridden: 0
+      - m_Value: {x: 0.4072403, y: 0.52711535, z: 0.90466136, w: 1}
+        m_Name: BrightColor
+        m_Overridden: 0
+      - m_Value: {x: 0.028426038, y: 0.051269468, z: 0.2917707, w: 1}
+        m_Name: DarkColor
+        m_Overridden: 0
     m_Uint:
       m_Array: []
     m_Int:
@@ -74,7 +83,10 @@ VisualEffect:
     m_NamedObject:
       m_Array: []
     m_Bool:
-      m_Array: []
+      m_Array:
+      - m_Value: 1
+        m_Name: UseLUT
+        m_Overridden: 0
 --- !u!73398921 &747162554028203497
 VFXRenderer:
   serializedVersion: 1
@@ -141,3 +153,4 @@ MonoBehaviour:
   playerLayer:
     serializedVersion: 2
     m_Bits: 64
+  impactDelay: 0
