@@ -12,6 +12,9 @@ public class TextButtonEffect : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     private Vector3 originalPos;
 
+    [Header("Audio")]
+    public SoundDataSO hoverSFX; // 인스펙터에서 호버 효과음(SO)을 연결하세요.
+
     void Start()
     {
         originalPos = buttonText.transform.localPosition;
@@ -28,6 +31,13 @@ public class TextButtonEffect : MonoBehaviour, IPointerEnterHandler, IPointerExi
         // 2. 글자 색상 변경 및 살짝 이동 (로스트아크/하데스 느낌)
         buttonText.DOColor(new Color(0, 1, 1), 0.2f); // 청록색으로 변경
         buttonText.transform.DOLocalMoveX(originalPos.x + moveDistance, 0.2f);
+
+        // 2. 호버 사운드 재생 추가
+        if (SoundManager.Instance != null && hoverSFX != null)
+        {
+            // SoundManager를 통해 호버음을 재생합니다.
+            SoundManager.Instance.Play(hoverSFX, transform.position);
+        }
     }
 
     public void OnPointerExit(PointerEventData eventData)

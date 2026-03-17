@@ -13,6 +13,8 @@ public class TileManager : MonoBehaviour
     private HashSet<int> destroyingIndices = new HashSet<int>();
     private static MeshDemolisher _meshDemolisher = new MeshDemolisher();
 
+    private bool _isNavMeshUpdatePending = false;
+
     // 상하좌우 인접 데이터 (기존 유지)
     private readonly int[][] neighbors = new int[][] {
         new int[] { 1, 3 }, new int[] { 0, 2, 4 }, new int[] { 1, 5 },
@@ -42,6 +44,20 @@ public class TileManager : MonoBehaviour
         return -1;
     }
 
+    public void RequestNavMeshRebuild()
+    {
+        if (_isNavMeshUpdatePending) return;
+        StartCoroutine(RebuildNavMeshDelayed());
+    }
+
+    private IEnumerator RebuildNavMeshDelayed()
+    {
+        _isNavMeshUpdatePending = true;
+        yield return new WaitForEndOfFrame(); // 모든 타일 파괴 처리가 끝난 후 실행
+        if (navMeshSurface != null) navMeshSurface.BuildNavMesh();
+        _isNavMeshUpdatePending = false;
+    }
+
     // 스킬 적중 시점에 맞춰 호출될 파괴 함수
     public void DestroyTileWithDelay(int index, float delay)
     {
@@ -53,6 +69,8 @@ public class TileManager : MonoBehaviour
         yield return new WaitForSeconds(delay); // 스킬 낙하 시간 대기
 
         GameObject tile = tiles[index];
+        if (!tile.activeSelf) yield break;
+
         PointGenerator pg = tile.GetComponent<PointGenerator>();
 
         if (pg != null && pg.pointsParent != null)
@@ -62,20 +80,27 @@ public class TileManager : MonoBehaviour
 
             List<GameObject> fragments = _meshDemolisher.Demolish(tile, breakPoints, interiorMaterial);
 
+            int count = 0;
             foreach (var frag in fragments)
             {
-                if (frag == null) continue;
                 Rigidbody rb = frag.AddComponent<Rigidbody>();
                 MeshCollider mc = frag.AddComponent<MeshCollider>();
-                mc.convex = true;
+                mc.convex = true; // 이 작업이 매우 무겁습니다.
+
                 rb.AddExplosionForce(400f, tile.transform.position, 7f);
                 Destroy(frag, 3f);
+
+                // 파편 5개마다 한 프레임씩 쉬어줌 (렉 분산)
+                count++;
+                if (count % 5 == 0) yield return null;
             }
         }
 
         tile.SetActive(false);
-        if (navMeshSurface != null) navMeshSurface.BuildNavMesh();
         destroyingIndices.Remove(index);
+
+        // [핵심] 타일마다 빌드하는 게 아니라 예약만 함
+        RequestNavMeshRebuild();
     }
 
     private bool CanPathToCenterAfterDestroy(int indexToDestroy)

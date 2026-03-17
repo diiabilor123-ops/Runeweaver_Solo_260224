@@ -307,22 +307,6 @@ MonoBehaviour:
     max: Infinity
     enumValues: []
     descendantCount: 0
-  - name: IndicatorColor
-    path: IndicatorColor
-    tooltip: 
-    space: -1
-    spaceable: 0
-    sheetType: m_Vector4f
-    realType: Color
-    defaultValue:
-      m_Type:
-        m_SerializableType: UnityEngine.Color, UnityEngine.CoreModule, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-      m_SerializableObject: '{"r":0.0,"g":0.0,"b":0.0,"a":0.0}'
-    min: -Infinity
-    max: Infinity
-    enumValues: []
-    descendantCount: 0
   - name: BrightColor
     path: BrightColor
     tooltip: Brighter Color of the Effect
@@ -400,6 +384,22 @@ MonoBehaviour:
         m_SerializableType: System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral,
           PublicKeyToken=b77a5c561934e089
       m_SerializableObject: False
+    min: -Infinity
+    max: Infinity
+    enumValues: []
+    descendantCount: 0
+  - name: IndicatorColor
+    path: IndicatorColor
+    tooltip: 
+    space: -1
+    spaceable: 0
+    sheetType: m_Vector4f
+    realType: Color
+    defaultValue:
+      m_Type:
+        m_SerializableType: UnityEngine.Color, UnityEngine.CoreModule, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+      m_SerializableObject: '{"r":0.0,"g":0.0,"b":0.0,"a":0.0}'
     min: -Infinity
     max: Infinity
     enumValues: []
@@ -1529,7 +1529,7 @@ MonoBehaviour:
   - {fileID: 8926484042661614764}
   m_ExposedName: Dissapation
   m_Exposed: 1
-  m_Order: 2
+  m_Order: 1
   m_Category: Timing
   m_Min:
     m_Type:
@@ -11035,7 +11035,7 @@ MonoBehaviour:
   - {fileID: 8926484042661616999}
   m_ExposedName: BrightColor
   m_Exposed: 1
-  m_Order: 3
+  m_Order: 2
   m_Category: Color
   m_Min:
     m_Type:
@@ -11360,7 +11360,7 @@ MonoBehaviour:
   - {fileID: 8926484042661617005}
   m_ExposedName: DarkColor
   m_Exposed: 1
-  m_Order: 4
+  m_Order: 3
   m_Category: Color
   m_Min:
     m_Type:
@@ -11682,7 +11682,7 @@ MonoBehaviour:
   - {fileID: 8926484042661617011}
   m_ExposedName: UseLUT
   m_Exposed: 1
-  m_Order: 5
+  m_Order: 4
   m_Category: Color
   m_Min:
     m_Type:
@@ -11862,7 +11862,7 @@ MonoBehaviour:
   - {fileID: 8926484042661617013}
   m_ExposedName: LUT
   m_Exposed: 1
-  m_Order: 6
+  m_Order: 5
   m_Category: Color
   m_Min:
     m_Type:
@@ -12051,7 +12051,7 @@ MonoBehaviour:
   - {fileID: 8926484042661617131}
   m_ExposedName: MakeGlowWithBloom
   m_Exposed: 1
-  m_Order: 7
+  m_Order: 6
   m_Category: Color
   m_Min:
     m_Type:
@@ -13302,7 +13302,7 @@ MonoBehaviour:
   - {fileID: 8926484042661617218}
   m_ExposedName: IndicatorTexture
   m_Exposed: 1
-  m_Order: 8
+  m_Order: 7
   m_Category: 
   m_Min:
     m_Type:
@@ -15144,7 +15144,7 @@ MonoBehaviour:
   - {fileID: 8926484042661617337}
   m_ExposedName: Diameter
   m_Exposed: 1
-  m_Order: 9
+  m_Order: 8
   m_Category: 
   m_Min:
     m_Type:
@@ -16229,7 +16229,7 @@ MonoBehaviour:
   - {fileID: 8926484042661617369}
   m_ExposedName: Height
   m_Exposed: 1
-  m_Order: 10
+  m_Order: 9
   m_Category: 
   m_Min:
     m_Type:
@@ -23435,7 +23435,7 @@ MonoBehaviour:
   - {fileID: 8926484042661617769}
   m_ExposedName: Intensity
   m_Exposed: 1
-  m_Order: 11
+  m_Order: 10
   m_Category: 
   m_Min:
     m_Type:
@@ -46603,7 +46603,7 @@ MonoBehaviour:
   - {fileID: 8926484042661618482}
   m_ExposedName: IndicatorColor
   m_Exposed: 1
-  m_Order: 1
+  m_Order: 11
   m_Category: Color
   m_Min:
     m_Type:

@@ -23,7 +23,7 @@ public class SoundManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            // DontDestroyOnLoad(gameObject); // 필요 시 해제
+            DontDestroyOnLoad(gameObject); // 필요 시 해제
 
             // [중요] BGM 소스를 미리 생성/초기화합니다.
             InitializeBGM();
@@ -79,7 +79,7 @@ public class SoundManager : MonoBehaviour
         source.clip = data.clip;
         source.volume = data.volume;
         source.pitch = UnityEngine.Random.Range(data.minPitch, data.maxPitch);
-        source.spatialBlend = 1.0f;
+        source.spatialBlend = data.spatialBlend;
 
         source.time = data.startTime; // 파일의 중간부터 틉니다 (앞쪽 무음 건너뛰기)
         source.PlayDelayed(data.playDelay); // n초 뒤에 재생합니다 (너무 일찍 나올 때 지연)

@@ -22,4 +22,7 @@ public class SoundDataSO : ScriptableObject
     [Header("Advanced (선택사항)")]
     [Tooltip("비워두면 기본 SFX 통로를 타고, 지정하면 그 통로를 탑니다.")]
     public AudioMixerGroup customMixerGroup; // 특별 관리가 필요한 소리용
+
+    [Range(0f, 1f)]
+    public float spatialBlend = 1.0f; // 0은 2D(UI용), 1은 3D(인게임용)
 }
