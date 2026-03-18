@@ -3,34 +3,41 @@ using Runeweaver.Player;
 using System.Collections.Generic;
 using UnityEngine;
 
-
-/// <summary>
-/// [플레이어 체력 관리]
-/// IDamageable 인터페이스를 상속받아 적이나 환경으로부터 데미지를 입습니다.
-/// </summary>
-public class PlayerHealth : MonoBehaviour, IDamageable // 1. 인터페이스 상속 추가
+public class PlayerHealth : MonoBehaviour, IDamageable
 {
     [SerializeField] private float maxHp = 100f;
-    private float currentHp;
-    private bool isInvincible = false; // 무적 상태 (연속 데미지 방지)
+    private bool isInvincible = false;
+    private Animator anim;
+    private Rigidbody rb;
+
+    // --- [추가] 조작 스크립트 참조 ---
+    // 플레이어의 이동/공격을 담당하는 스크립트 이름을 여기에 적으세요.
+    // private PlayerController moveScript;
+    private MonoBehaviour moveScript;
 
     [Header("Damage UI")]
-    [SerializeField] private GameObject damageTextPrefab; // 플레이어용 팝업 프리팹 할당
+    [SerializeField] private GameObject damageTextPrefab;
 
     void Awake()
     {
-        currentHp = maxHp;
+        anim = GetComponent<Animator>();
+        rb = GetComponent<Rigidbody>();
+
+        // 이동 스크립트 가져오기 (본인 프로젝트의 이동 스크립트 타입으로 변경 권장)
+        // 예: moveScript = GetComponent<PlayerController>();
+        moveScript = GetComponent<MonoBehaviour>(); // 임시로 MonoBehaviour로 설정
+
+        if (PlayerStats.Instance != null)
+        {
+            PlayerStats.Instance.maxHp = maxHp;
+            PlayerStats.Instance.currentHp = maxHp;
+        }
     }
 
     public void TakeDamage(HitData hitData)
     {
-        // [팀킬 방지] 공격자가 같은 Player 팀이면 데미지를 무시합니다.
         if (hitData.attackerTeam == Team.Player || isInvincible) return;
 
-        if (isInvincible) return;
-
-        // [수정] DamageCalculator.Calculate의 인자 타입을 ElementEnemyType에 맞춥니다.
-        // 몬스터가 플레이어를 공격할 때는 hitData.element(ElementEnemyType)를 사용합니다.
         List<ElementType> monsterElementList = new List<ElementType>();
         if (hitData.element == MonsterElement.M_Fire) monsterElementList.Add(ElementType.Fire);
         else if (hitData.element == MonsterElement.M_Ice) monsterElementList.Add(ElementType.Ice);
@@ -38,36 +45,65 @@ public class PlayerHealth : MonoBehaviour, IDamageable // 1. 인터페이스 상속 추�
 
         DamageResult result = DamageCalculator.Calculate(
             hitData.damage,
-            monsterElementList, // 리스트 형태로 전달
+            monsterElementList,
             hitData.attackerTeam,
             null
         );
 
-        // 2. [핵심 수정] PlayerStats의 체력을 실제로 깎음
         if (PlayerStats.Instance != null)
         {
             PlayerStats.Instance.ApplyDamage(result.finalDamage);
+            DamagePopup.SpawnPopup(damageTextPrefab, transform.position, result.finalDamage, result.isCritical, Color.red);
+
+            if (PlayerStats.Instance.currentHp <= 0) Die();
+            else StartCoroutine(InvincibilityRoutine());
         }
-
-        // [수정] 통합된 static 함수 호출 (플레이어: 빨간색)
-        DamagePopup.SpawnPopup(damageTextPrefab, transform.position, result.finalDamage, result.isCritical, Color.red);
-
-        // 4. 사망 및 무적 처리
-        if (PlayerStats.Instance.currentHp <= 0) Die();
-        else StartCoroutine(InvincibilityRoutine());
     }
 
     private System.Collections.IEnumerator InvincibilityRoutine()
     {
         isInvincible = true;
-        // 여기서 피격 효과(깜빡임 등)를 넣으면 좋습니다.
         yield return new WaitForSeconds(0.5f);
         isInvincible = false;
     }
 
+    public void ResetHealth()
+    {
+        if (PlayerStats.Instance != null)
+            PlayerStats.Instance.currentHp = maxHp;
+
+        isInvincible = false;
+
+        // 1. 애니메이션 및 물리 상태 복구
+        if (anim != null) anim.Play("Idle", 0, 0f);
+        if (rb != null) rb.isKinematic = false;
+
+        // 2. [추가] 조작 스크립트 다시 활성화
+        if (moveScript != null) moveScript.enabled = true;
+
+        transform.localScale = Vector3.one;
+    }
+
     private void Die()
     {
+        if (isInvincible) return;
+        isInvincible = true;
+
         Debug.Log("플레이어 사망!");
-        // 게임 오버 팝업이나 씬 재시작 로직
+
+        // 1. 애니메이션 실행
+        if (anim != null) anim.SetTrigger("Die");
+
+        // 2. 시체가 밀리지 않게 물리 끄기
+        if (rb != null) rb.isKinematic = true;
+
+        // 3. [추가] 조작 스크립트 비활성화 (이동/공격 불가)
+        if (moveScript != null) moveScript.enabled = false;
+
+        // 4. 레벨 매니저 호출
+        if (LevelManager.Instance != null)
+        {
+            LevelManager.Instance.OnPlayerDied();
+        }
     }
 }

@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   enemyName: Boar
   mainElement: 0
-  maxHp: 500
+  maxHp: 50
   moveSpeed: 3.5
   attackDamage: 10
-  detectionRange: 10
+  detectionRange: 20
   attackRange: 2
   chargeDistance: 8
   attackCooldown: 2

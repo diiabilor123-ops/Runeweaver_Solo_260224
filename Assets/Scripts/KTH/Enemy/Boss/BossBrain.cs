@@ -45,7 +45,7 @@ public class BossBrain : EnemyBrain
     }
 
 
-    private void Start() => StartCoroutine(FullBossLoop());
+//    private void Start() => StartCoroutine(FullBossLoop());
 
     protected override void LogicUpdate() { }
 
@@ -219,20 +219,35 @@ public class BossBrain : EnemyBrain
     // BossBrain.cs 에 아래 내용 추가 및 수정
     public void PauseAI()
     {
-        // 1. 현재 실행 중인 모든 코루틴(패턴, 루프 등) 중단
+        // 1. 모든 코루틴 중단
         StopAllCoroutines();
         isPatternRunning = false;
 
-        // 2. 이동 중지 및 상태 초기화
-        if (mover != null) mover.SetAgentActive(false);
-        anim.SetFloat("MoveSpeed", 0);
-        ToggleSword(false); // 칼 콜라이더 끄기
+        // 2. [수정] mover가 있는지 먼저 확인
+        if (mover != null)
+        {
+            mover.SetAgentActive(false);
+            mover.Stop();
+        }
+
+        // 3. [수정] animator(변수) 혹은 anim(프로퍼티)이 있는지 확인 (228번 에러 지점)
+        if (animator != null)
+        {
+            animator.SetFloat(HashMoveSpeed, 0);
+        }
+
+        ToggleSword(false);
+        currentState = State.Intro;
     }
 
     public void ResumeAI()
     {
-        // AI 루프 다시 시작
-        StartCoroutine(FullBossLoop());
+        // 보스가 죽지 않았을 때만 루프 재시작
+        if (health != null && !health.IsDead)
+        {
+            StopAllCoroutines(); // 중복 방지
+            StartCoroutine(FullBossLoop());
+        }
     }
 
 }

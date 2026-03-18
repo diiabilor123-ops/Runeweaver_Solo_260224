@@ -13,10 +13,12 @@ MonoBehaviour:
   m_Name: Sound_Boss Map
   m_EditorClassIdentifier: Assembly-CSharp::SoundDataSO
   clip: {fileID: 8300000, guid: 6eda2561512a1b244b0078c2e90dbeb9, type: 3}
-  volume: 0.2
+  volume: 0.4
   minPitch: 0.9
   maxPitch: 1.1
   loop: 1
   playDelay: 0
   startTime: 0
+  playDuration: 0
   customMixerGroup: {fileID: 0}
+  spatialBlend: 1

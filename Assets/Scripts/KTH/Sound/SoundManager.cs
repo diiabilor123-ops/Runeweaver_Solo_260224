@@ -105,4 +105,15 @@ public class SoundManager : MonoBehaviour
     {
         ChangeBGM(data , fadeDuration);
     }
+
+    public void StopBGM(float fadeDuration = 1.0f)
+    {
+        if (bgmSource == null) return;
+
+        // BGM을 서서히 줄이고 완전히 정지시킵니다.
+        // SetUpdate(true)를 붙여야 나중에 게임이 일시정지(TimeScale=0)되어도 소리가 꺼집니다.
+        bgmSource.DOFade(0, fadeDuration).SetUpdate(true).OnComplete(() => {
+            bgmSource.Stop();
+        });
+    }
 }

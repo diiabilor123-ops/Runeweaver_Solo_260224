@@ -1,6 +1,7 @@
 using Runeweaver;
 using UnityEngine;
 using UnityEngine.AI;
+using DG.Tweening;
 
 /// <summary>
 /// [몬스터의 생명 및 데미지 관리]
@@ -131,12 +132,42 @@ public class EnemyHealth : MonoBehaviour, IDamageable
     {
         if (IsDead) return;
         IsDead = true;
-        Debug.Log($"{gameObject.name} 사망!");
+
         if (agent != null) agent.enabled = false;
+        Collider col = GetComponent<Collider>();
+        if (col != null) col.enabled = false;
 
-        // 사망 연출 호출 (필요 시)
-        // visuals.PlayDeathEffect();
+        if (LevelManager.Instance != null)
+            LevelManager.Instance.OnMonsterDied();
 
-        Destroy(gameObject);
+        // [수정] 중앙으로 소멸하는 연출
+        // 몬스터의 높이(Center)를 계산하여 그 지점으로 이동하며 작아집니다.
+        float centerY = col != null ? col.bounds.center.y : transform.position.y + 1f;
+        Vector3 centerPoint = new Vector3(transform.position.x, centerY, transform.position.z);
+
+        // 크기는 0으로, 위치는 중앙으로 동시에 트위닝
+        transform.DOScale(Vector3.zero, 0.5f).SetEase(Ease.InBack);
+        transform.DOMove(centerPoint, 0.5f).SetEase(Ease.InBack).OnComplete(() => {
+            Destroy(gameObject);
+        });
     }
+
+    // EnemyHealth.cs 내부에 추가
+    public void ResetHealth()
+    {
+        IsDead = false;
+        currentHp = enemyData.maxHp;
+
+        // 콜라이더와 에이전트 다시 켜기
+        if (agent != null) agent.enabled = true;
+        Collider col = GetComponent<Collider>();
+        if (col != null) col.enabled = true;
+
+        // 작아졌던 크기 복구
+        transform.localScale = Vector3.one;
+
+        // UI 업데이트 알림
+        OnHealthChanged?.Invoke(currentHp, enemyData.maxHp);
+    }
+
 }

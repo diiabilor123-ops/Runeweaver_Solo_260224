@@ -43,5 +43,23 @@ namespace Runeweaver.Player
             currentHp -= amount;
             currentHp = Mathf.Clamp(currentHp, 0, maxHp); // 0 이하로 내려가지 않게 방지
         }
+
+        // 어그먼트로 인해 MaxHP가 늘어났을 때 호출하세요.
+        public void UpdateMaxHP(float extraHP)
+        {
+            float oldMax = maxHp;
+            maxHp += extraHP;
+
+            // 현재 체력도 비율에 맞춰 늘려주는 것이 버그가 적습니다.
+            currentHp += extraHP;
+
+            Debug.Log($"MaxHP 증가! {oldMax} -> {maxHp}");
+        }
+
+        // 힐링 어그먼트가 있다면
+        public void Heal(float amount)
+        {
+            currentHp = Mathf.Min(currentHp + amount, maxHp);
+        }
     }
 }

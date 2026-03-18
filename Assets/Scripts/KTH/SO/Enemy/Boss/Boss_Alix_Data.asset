@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e80cf883b454a1a40bee63a05db6e325, type: 3}
   m_Name: Boss_Alix_Data
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
-  enemyName: Alix
+  enemyName: "\uCE7C\uB9AD\uC2A4"
   mainElement: 0
   maxHp: 5000
   moveSpeed: 2.5
@@ -20,7 +20,7 @@ MonoBehaviour:
   detectionRange: 10
   attackRange: 2
   chargeDistance: 8
-  attackCooldown: 1.5
+  attackCooldown: 1.2
   attackWarningTime: 0.5
   knockbackForce: 5
   stunDuration: 1
